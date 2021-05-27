@@ -1,0 +1,39 @@
+Wallet (locally)
+================
+name: oya
+password: "PW5Je32aamBnvp4DAmDwL8jLGzpknBMyrSY9KuCQF72e9zG92fud8"
+command: `cleos wallet unlock -n oya --password PW5Je32aamBnvp4DAmDwL8jLGzpknBMyrSY9KuCQF72e9zG92fud8`
+########################################################################
+Jungle Testnet
+************************************************************************************
+
+OYA Contracts
+====================
+oyanftmarket
+Private key: 5JPUfZ9LPWFiBGC5eXgNQjybWoxZuVbQZGpRwvVTNxdBnUHhjuu
+Public key: EOS7GX4FWpCKutbvaHS4Pnmbs1yJBReQVnViDF4bSMd2HF7s4XcuZ
+-----------------------------------------------------------------
+
+
+OYA Users
+==================
+oyausr111111
+Private key: 5KCGUzj71CmG6khouMo8ynmnReShBywfGtdB7nC5A3SvD2dogfL
+Public key: EOS88e4iPSe2YttpJLCVgK9nHGeHDk8HfeN7WRVFogdAL2FQ35M2Q
+-----------------------------------------------------------------
+oyausr111112
+Private key: 5JHcyhuCSJFgvFZhx88Pddm1FamKywcQYVHR8t6mmzDW266GMra
+Public key: EOS7HHDmd2kNa9rpwCDuZb81VDDdgbse5tHktvsDN7q7HVCvWnVC3
+-----------------------------------------------------------------
+oyausr111113
+Private key: 5J68cGJjt2Z9a1rzWVqfCtbopShLijtsqttBMJ5NpvcnRohv81k
+Public key: EOS59cQ5LShBF9DLcFcmSjPtq5DPmT7YWBvEEdRYJXMkRH2VLut9u
+-------------------------------------------------------------
+oyausr111114
+Private key: 5JtbbeVN4zCodtUMaBvdwn1AoenUSGAhsj2xapynpNu3XiUcYM8
+Public key: EOS5JhJVyqYHMxKdy6NVfq3W9xpXDTZvkJLpxgkZcuqTzPCcvvFuK
+-------------------------------------------------------------
+oyausr111115
+Private key: 5JryHnkS9sgCmEb7hLQvajA8SF8yaBSoyocvZV6RVXqdpifEGvh
+Public key: EOS65yrGnMxzySdbVVeadjxY5wpZDLMz6c2xBmgzYnCh4UvnN7AeY
+-------------------------------------------------------------
