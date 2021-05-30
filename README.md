@@ -1,14 +1,16 @@
 # eosio_oya_contracts
 
+![](https://github.com/abhi3700/oya_bot/other/img/oya_nft_structure.png)
 
 ## Terms
-* collection: A collection can contain many items
-* item/asset: item or asset are used interchangeably. 
-* Author: one who creates NFT asset.
-* Buyer: one who buy NFT asset.
-* Seller: one who sell NFT asset. For 1st sale, the author can be the seller unless gifts to someone.
-* set price: price of NFT asset set by seller. 
-* accept token: fiat or crypto or both.
+* Collection: A collection can contain one or more assets.
+* Asset: asset is present inside a collection. It can contain one or more items.
+* Item: an item is called 'asset' only if the total no. of asset's copies is only one.  
+* Author: one who creates NFT Item. Author is also the seller for the 1st sale of the asset's item.
+* Buyer: one who buy NFT Item.
+* Seller: one who sell NFT Item. So, for 1st sale, the author is the seller unless gifted to someone.
+* item price: price of NFT Item set by seller/author(1st sale). 
+* token acceptance: pay in fiat or crypto.
 
 ## ACTION
 * 
