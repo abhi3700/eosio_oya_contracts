@@ -65,8 +65,7 @@ public:
 	 * @param author_id - author telegram_id (fetched directly from private chat)
 	 * @param collection_name - collection name
 	 * 
-	 * @pre - match the chat_id in telegram with the author_id for user verification
-	 * @pre - ensure the item_copies_qty_total == 0
+	 * @pre - ensure that collection (search by asset_id in sales & auction tables) is not listed in sale or auction
 	 */
 	ACTION delcol(
 				uint64_t author_id,
@@ -77,27 +76,33 @@ public:
 	 * @brief - Add or modify asset in a collection
 	 * @details - Add or modify asset in a collection
 	 * 
+	 * @param collection_name - collection name
+	 * @param asset_id - asset id (to be created from outside) as 9210<current_timestamp>
 	 * @param author_id - author telegram_id (fetched directly from private chat)
 	 * @param asset_name - asset name
 	 * @param asset_desc - asset description
 	 * @param asset_img_hash - asset image hash
 	 * @param asset_vid_hash - asset video hash
 	 * @param asset_gif_hash - asset gif hash
-	 * @param asset_copies_qty_total - asset total copies qty
+	 * @param asset_copies_qty_total - asset total copies qty (max. 99999)
 	 * @param asset_royaltyfee - asset royalty fee
 	 * @param asset_artist - asset artist name
 	 * 
 	 * @pre - collection_name must exist
+	 * @pre - total asset copies must be <= 99999
 	 * 
 	 */
 	ACTION addmodasset(
 				const name& collection_name,
+				uint64_t asset_id,
 				uint64_t author_id,
+				uint64_t current_owner_id,
 				const string& asset_name,
 				const string& asset_desc,
 				const checksum256& asset_img_hash,
 				const checksum256& asset_vid_hash,
 				const checksum256& asset_gif_hash,
+				uint64_t asset_copies_qty_used,
 				uint64_t asset_copies_qty_total,
 				float asset_royaltyfee,
 				const string& asset_artist
@@ -213,22 +218,6 @@ public:
 				const name& author_id,
 			);
 
-	TABLE auction
-	{
-		uint64_t auction_id;		// auction id. 3701<start_time>
-		uint64_t item_id;			// item_id format is "<item_id>99999" E.g. if max_copies = 100, then "<asset_id>1" is the 1st item_id. If max_copies = 1, then item_id is "<asset_id>1"
-		uint64_t asset_id;			// asset id
-		uint64_t seller_id;				// seller telegram_id
-		uint64_t start_time;		// auction start time
-		uint64_t end_time;			// auction end time
-		asset current_bid_crypto;			// current bid of asset in crypto (if opted for crypto)
-		string current_bid_fiat;			// current bid of asset in fiat (if opted for fiat)
-		uint64_t current_bidder_id;		// current bidder telegram_id
-		bool claimed_by_seller;		// claimed by seller
-		bool claimed_by_buyer;		// claimed by buyer
-		name collection_name;		// collection name
-		float royalty_fee;		// collection/royalty fee
-
 
 
 	// -----------------------------------------------------------------------------------------------------------------------
@@ -262,11 +251,10 @@ public:
 	{
 		// name author;					// collection author name [DISABLED for Telegram Bot, as there is no EOSIO account for users needed]
 		name collection_name;			// collection name
-		// uint64_t author_id;				// author telegram_id
 		string collection_desc;			// collection description
 		string collection_url;			// collection url
-		uint64_t collection_item_qty;	// collection item qty
-		vector<uint64_t> collection_item_ids;	// collection item ids	
+		// uint64_t collection_item_qty;	// collection item qty
+		// vector<uint64_t> collection_item_ids;	// collection item ids	
 
 
 		auto primary_key() const { return collection_name.value; }
@@ -326,13 +314,15 @@ public:
 		uint64_t by_asset() const { return asset_id; }
 		uint64_t by_seller() const { return seller_id; }
 		uint64_t by_buyer() const { return buyer_id; }
+		uint64_t by_collection() const { return collection_name.value; }
 	};
 
 	using sale_index = multi_index<"sales"_n, sale>,
 								indexed_by< "byitem"_n, const_mem_fun<sale, uint64_t, &sale::by_item>>,	
 								indexed_by< "byasset"_n, const_mem_fun<sale, uint64_t, &sale::by_asset>>,
 								indexed_by< "byseller"_n, const_mem_fun<sale, uint64_t, &sale::by_seller>>,
-								indexed_by< "bybuyer"_n, const_mem_fun<sale, uint64_t, &sale::by_buyer>>
+								indexed_by< "bybuyer"_n, const_mem_fun<sale, uint64_t, &sale::by_buyer>>,
+								indexed_by< "bycollection"_n, const_mem_fun<sale, uint64_t, &sale::by_collection>>,
 								>;
 
 
@@ -360,13 +350,15 @@ public:
 		uint64_t by_asset() const { return asset_id; }
 		uint64_t by_seller() const { return seller_id; }
 		uint64_t by_buyer() const { return buyer_id; }
+		uint64_t by_collection() const { return collection_name.value; }
 	};
 
 	using auction_index = multi_index<"auctions"_n, auction>,
 								indexed_by< "byitem"_n, const_mem_fun<auction, uint64_t, &auction::by_item>>,	
 								indexed_by< "byasset"_n, const_mem_fun<auction, uint64_t, &auction::by_asset>>,
 								indexed_by< "byseller"_n, const_mem_fun<auction, uint64_t, &auction::by_seller>>,
-								indexed_by< "bybuyer"_n, const_mem_fun<auction, uint64_t, &auction::by_buyer>>
+								indexed_by< "bybuyer"_n, const_mem_fun<auction, uint64_t, &auction::by_buyer>>,
+								indexed_by< "bycollection"_n, const_mem_fun<auction, uint64_t, &auction::by_collection>>,
 								>;
 
 
