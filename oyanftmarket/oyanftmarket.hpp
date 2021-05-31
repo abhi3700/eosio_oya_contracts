@@ -146,60 +146,58 @@ public:
 			);
 
 
-	/**
-	 * @brief - add/modify asset into nftownership table
-	 * @details - add/modify asset into nftownership table
-	 * 
-	 * @param owner_id - owner id
-	 * @param collection_name - collection name
-	 * @param asset_id - asset id
-	 */
-	ACTION addastnftown(
-				uint64_t owner_id,
-				const name& collection_name,
-				uint64_t asset_id,
-			);
+	// /**
+	//  * @brief - add/modify asset into nftownership table for non-author
+	//  * @details - add/modify asset into nftownership table for non-author
+	//  * 
+	//  * @param nonauthor_id - nonauthor id
+	//  * @param collection_name - collection name
+	//  * @param asset_id - asset id
+	//  */
+	// ACTION addastother(
+	// 			uint64_t nonauthor_id,
+	// 			const name& collection_name,
+	// 			uint64_t asset_id,
+	// 		);
+
+	// /**
+	//  * @brief - delete asset into nftownership table for non-author
+	//  * @details - delete asset into nftownership table for non-author
+	//  * 
+	//  * @param owner_id - nonauthor id
+	//  * @param collection_name - collection name
+	//  * @param asset_id - asset id
+	//  */
+	// ACTION delastother(
+	// 			uint64_t nonauthor_id,
+	// 			const name& collection_name,
+	// 			uint64_t asset_id,
+	// 		);
 
 	/**
-	 * @brief - delete asset into nftownership table
-	 * @details - delete asset into nftownership table
+	 * @brief - add/modify item into nftownership table for non-author
+	 * @details - add/modify item into nftownership table for non-author
 	 * 
-	 * @param owner_id - owner id
+	 * @param owner_id - nonauthor id
 	 * @param collection_name - collection name
-	 * @param asset_id - asset id
-	 */
-	ACTION delastnftown(
-				uint64_t owner_id,
-				const name& collection_name,
-				uint64_t asset_id,
-			);
-
-	/**
-	 * @brief - add/modify item into nftownership table
-	 * @details - add/modify item into nftownership table
-	 * 
-	 * @param owner_id - owner id
-	 * @param asset_id - asset id
 	 * @param item_id - item id
 	 */
-	ACTION additmnftown(
-				uint64_t owner_id,
-				uint64_t asset_id,
+	ACTION additmother(
+				uint64_t nonauthor_id,
+				const name& collection_name,
 				uint64_t item_id
 			);
 
 
 	/**
-	 * @brief - delete item into nftownership table
-	 * @details - delete item into nftownership table
+	 * @brief - remove item into nftownership table for non-author
+	 * @details - remove item into nftownership table for non-author
 	 * 
-	 * @param owner_id - owner id
-	 * @param asset_id - asset id
+	 * @param nonauthor_id - nonauthor id
 	 * @param item_id - item id
 	 */
-	ACTION delitmnftown(
-				uint64_t owner_id,
-				uint64_t asset_id,
+	ACTION rmitmother(
+				uint64_t nonauthor_id,
 				uint64_t item_id
 			);
 
@@ -292,13 +290,13 @@ public:
 	using balance_index = multi_index<"balances"_n, balance>
 
 	// -----------------------------------------------------------------------------------------------------------------------
-	// scope: <person_telegram_id>
+	// Table for non-author with asset_ids, item_ids
+	// scope: <nonauthor_telegram_id>
 	TABLE oyanonauthor
 	{
 		name collection_name;			// collection name
 		uint64_t asset_id;				// asset id
 		vector<uint64_t> item_ids;			// list of item id for the asset_id
-		bool is_author;				// yes/no i.e. 1/0
 
 		auto primary_key() const { return collection_name.value; }
 		uint64_t by_asset() const { return asset_id; }
@@ -426,9 +424,10 @@ public:
 
 
 	// -----------------------------------------------------------------------------------------------------------------------
-	inline uint64_t str_to_uint64t(const string& s) {
-		uint64_t num = strtoull(s.c_str(), NULL, 10);
-		return num;
+	inline bool has_item_in_vector( const vector<uint64_t>& vec, uint64_t item) {
+		bool found = false;
+		// todo: write logic;
+		return found;
 	}
 
 };

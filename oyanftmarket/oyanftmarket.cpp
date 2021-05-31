@@ -219,6 +219,62 @@ void oyanftmarket::delitem(
 
 	check(item_auction_it == item_auction_idx.end(), "The asset is listed in auction, so can\'t be deleted.");
 
-	// reduce the no. by 1 in asset table & 
+	// todo: reduce by 1 from both `asset_copies_qty_total` & 'asset_copies_qty_used' in asset table
+	
+
+	// todo: remove the item_id from oyanonauthor table 
+
+}
+
+
+
+void oyanftmarket::additmother(
+				uint64_t nonauthor_id,
+				const name& collection_name,
+				uint64_t item_id
+			)
+{
+	require_auth(get_self());
+
+	// extract the asset_id from item_id
+	uint64_t asset_id = str_to_uint64t(std::to_string(item_id).substr(0, 14));
+
+	oyanonauthor_index oyanonauthor_table(get_self(), nonauthor_id);
+	oyanonauthor_it = oyanonauthor_table.find(collection_name.value);
+
+	if (oyanonauthor_it == oyanonauthor_table.end()) {
+		oyanonauthor_table.emplace(get_self(), [&](auto &row){
+			row.collection_name = collection_name;
+			row.asset_id = asset_id;
+			// todo: add item_id
+		});
+	} else {
+		oyanonauthor_table.modify(oyanonauthor_it, get_self(), [&](auto &row){
+			// todo: add item_id
+		});
+	}
+}
+
+void oyanftmarket::rmitmother(
+				uint64_t nonauthor_id,
+				uint64_t item_id
+			)
+{
+	require_auth(get_self());
+
+	// extract the asset_id from item_id
+	uint64_t asset_id = str_to_uint64t(std::to_string(item_id).substr(0, 14));
+
+	oyanonauthor_index oyanonauthor_table(get_self(), nonauthor_id);
+	asset_oyanonauthor_idx = oyanonauthor_table.get_index<"byasset">();
+	asset_oyanonauthor_it = asset_oyanonauthor_idx.find(asset_id);
+
+	check(asset_oyanonauthor_it != asset_oyanonauthor_idx.end(), "the asset containing this item doesn\'t exist.");
+
+	// todo: check if item is present in `asset_oyanonauthor_it->item_ids` list
+
+	// todo: delete the asset id if there is no item inside after removing parsed item_id
+	// if( ( asset_oyanonauthor_it->item_ids.size() == 1 ) && (has_item(asset_oyanonauthor_it->item_ids, item_id)) )
+	// asset_oyanonauthor_idx.erase(asset_oyanonauthor_it);
 
 }
