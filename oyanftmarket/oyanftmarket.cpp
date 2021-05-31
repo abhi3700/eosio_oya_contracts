@@ -46,7 +46,7 @@ void oyanftmarket::delcol(
 	check(collection_it != collection_table.end(), "The collection is not present.");
 
 
-	// check that the collection is neither listed in sale or auction table
+	// check that the collection is neither listed in sale nor auction table
 	// 1. Sale
 	sale_index sale_table(get_self(), get_self().value);
 	auto collection_sale_idx = sale_table.get_index<"bycollection"_n>();
@@ -123,6 +123,18 @@ void oyanftmarket::addmodasset(
 		});
 	}
 
+	// add the asset into nftownership table
+	// nftownership_index nftownership_table(get_self(), author_id);
+	// auto nftownership_it = nftownership_table.find(collection_name.value);
+
+	// if (nftownership_it == nftownership_table.end()) {
+	// 	nftownership_table.emplace(get_self(), [&](auto &row){
+	// 		row.collection_name = collection_name;
+	// 		row.asset_id = asset_id;
+	// 		row.is_author = author;
+	// 	});
+	// }
+
 }
 
 
@@ -144,32 +156,69 @@ void oyanftmarket::delasset(
 	// check for total asset copies as <= 99999
 	check(asset_copies_qty_total <= 99999, "The total asset copies can\'t be greater than 99999.")
 
+	// check that the asset is neither listed in sale nor auction table
+	// 1. Sale
+	sale_index sale_table(get_self(), get_self().value);
+	auto asset_sale_idx = sale_table.get_index<"byasset"_n>();
+	auto asset_sale_it = asset_sale_idx.find(asset_id);
+
+	check(asset_sale_it == asset_sale_idx.end(), "The asset is listed in sale with id, so can\'t be deleted.");
+
+	// 2. Auction
+	auction_index auction_table(get_self(), get_self().value);
+	auto asset_auction_idx = auction_table.get_index<"byasset"_n>();
+	auto asset_auction_it = asset_auction_idx.find(asset_id);
+
+	check(asset_auction_it == asset_auction_idx.end(), "The asset is listed in auction, so can\'t be deleted.");
+
+	// remove the asset from nftownership table
+
+
+	// Instantiate the asset table
 	asset_index asset_table(get_self(), collection_name.value);
 	auto asset_it = asset_table.find(asset_id);
 
-	if (asset_it == asset_table.end()) {
-		asset_table.emplace(get_self(), [&](auto &row){
-			row.asset_id = asset_id;
-			row.author_id = author_id;
-			row.current_owner_id = author_id;
-			row.asset_name = asset_name;
-			row.asset_desc = asset_desc;
-			row.asset_img_hash = asset_img_hash;
-			row.asset_vid_hash = asset_vid_hash;
-			row.asset_gif_hash = asset_gif_hash;
-			row.asset_copies_qty_used = 0;
-			row.asset_copies_qty_total = asset_copies_qty_total;
-			row.asset_royaltyfee = asset_royaltyfee;
-			row.asset_artist = asset_artist;
-		});
-	} else {
-		asset_table.modify(asset_it, get_self(), [&](auto &row){
-			if (current_owner_id != 0 && current_owner_id != author_id) row.current_owner_id = current_owner_id;
-			if (asset_copies_qty_used != 0) row.asset_copies_qty_used += asset_copies_qty_used;
-			if (asset_copies_qty_total != 0) row.asset_copies_qty_total = asset_copies_qty_total;
-			row.asset_royaltyfee = asset_royaltyfee;
-			row.asset_artist = asset_artist;
-		});
-	}
+	check(asset_it != asset_table.end(), "The asset id is not present.");
+
+	asset_table.erase(asset_it);
+
+
+
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+void oyanftmarket::delitem(
+				const name& collection_name,
+				uint64_t item_id,
+				uint64_t author_id
+			)
+{
+	require_auth(get_self());
+
+	// check whether valid collection_name
+	collection_index collection_table(get_self(), author_id);
+	auto collection_it = collection_table.find(collection_name.value);
+
+	check(collection_it != collection_table.end(), "The collection is not present.");
+
+	// extract the asset_id from item_id
+	// uint64_t asset_id = str_to_uint64t(std::to_string(item_id).substr(0, 14));
+
+	// check that the item is neither listed in sale nor auction table
+	// 1. Sale
+	sale_index sale_table(get_self(), get_self().value);
+	auto item_sale_idx = sale_table.get_index<"byitem"_n>();
+	auto item_sale_it = item_sale_idx.find(item_id);
+
+	check(item_sale_it == item_sale_idx.end(), "The item is listed in sale, so can\'t be deleted.");
+
+	// 2. Auction
+	auction_index auction_table(get_self(), get_self().value);
+	auto item_auction_idx = auction_table.get_index<"byitem"_n>();
+	auto item_auction_it = item_auction_idx.find(item_id);
+
+	check(item_auction_it == item_auction_idx.end(), "The asset is listed in auction, so can\'t be deleted.");
+
+	// reduce the no. by 1 in asset table & 
 
 }

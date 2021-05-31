@@ -5,6 +5,8 @@
 // #include <eosio/crypto.hpp>
 #include <string>
 #include <vector>
+#include <cstdlib>
+
 
 
 using eosio::contract;
@@ -135,12 +137,70 @@ public:
 	 * 
 	 * @pre - match the chat_id in telegram with the author_id for user verification
 	 * @pre - ensure that the item_id is not listed
-	 * @pre - ensure that the asset_id (of which the item belongs to) is not listed. Search by asset_id in sales & auctions tables
+	 * @pre - ensure that the item_id is not listed. Search by item_id in sales & auctions tables
 	 */
 	ACTION delitem(
 				const name& collection_name,
 				uint64_t item_id,
 				uint64_t author_id
+			);
+
+
+	/**
+	 * @brief - add/modify asset into nftownership table
+	 * @details - add/modify asset into nftownership table
+	 * 
+	 * @param owner_id - owner id
+	 * @param collection_name - collection name
+	 * @param asset_id - asset id
+	 */
+	ACTION addastnftown(
+				uint64_t owner_id,
+				const name& collection_name,
+				uint64_t asset_id,
+			);
+
+	/**
+	 * @brief - delete asset into nftownership table
+	 * @details - delete asset into nftownership table
+	 * 
+	 * @param owner_id - owner id
+	 * @param collection_name - collection name
+	 * @param asset_id - asset id
+	 */
+	ACTION delastnftown(
+				uint64_t owner_id,
+				const name& collection_name,
+				uint64_t asset_id,
+			);
+
+	/**
+	 * @brief - add/modify item into nftownership table
+	 * @details - add/modify item into nftownership table
+	 * 
+	 * @param owner_id - owner id
+	 * @param asset_id - asset id
+	 * @param item_id - item id
+	 */
+	ACTION additmnftown(
+				uint64_t owner_id,
+				uint64_t asset_id,
+				uint64_t item_id
+			);
+
+
+	/**
+	 * @brief - delete item into nftownership table
+	 * @details - delete item into nftownership table
+	 * 
+	 * @param owner_id - owner id
+	 * @param asset_id - asset id
+	 * @param item_id - item id
+	 */
+	ACTION delitmnftown(
+				uint64_t owner_id,
+				uint64_t asset_id,
+				uint64_t item_id
 			);
 
 
@@ -233,7 +293,7 @@ public:
 
 	// -----------------------------------------------------------------------------------------------------------------------
 	// scope: <person_telegram_id>
-	TABLE nftownership
+	TABLE oyanonauthor
 	{
 		name collection_name;			// collection name
 		uint64_t asset_id;				// asset id
@@ -241,9 +301,12 @@ public:
 		bool is_author;				// yes/no i.e. 1/0
 
 		auto primary_key() const { return collection_name.value; }
+		uint64_t by_asset() const { return asset_id; }
 	};
 
-	using nftownership_index = multi_index<"nftownership"_n, nftownership>;
+	using oyanonauthor_index = multi_index<"oyanonauthor"_n, oyanonauthor,
+								indexed_by< "byasset"_n, const_mem_fun<oyanonauthor, uint64_t, &oyanonauthor::by_asset>>
+								>;
 
 	// -----------------------------------------------------------------------------------------------------------------------
 	// scope: <author_telegram_id>
@@ -362,5 +425,10 @@ public:
 								>;
 
 
+	// -----------------------------------------------------------------------------------------------------------------------
+	inline uint64_t str_to_uint64t(const string& s) {
+		uint64_t num = strtoull(s.c_str(), NULL, 10);
+		return num;
+	}
 
 };
