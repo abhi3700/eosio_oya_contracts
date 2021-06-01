@@ -281,7 +281,7 @@ void oyanftmarket::rmitmother(
 
 	auto item_id_it = std::find(oyanonauthor_it->item_ids.begin(), oyanonauthor_it->item_ids.end(), item_id);
 	oyanonauthor_table.modify(oyanonauthor_it, get_self(), [&](auto &row){
-		if (item_id_it != oyanonauthor_it->item_ids.end())
+		if (item_id_it != oyanonauthor_it->item_ids.end())		// if item found
 			row.item_ids.erase(item_id_it);
 	});
 
@@ -297,10 +297,18 @@ void oyanftmarket::listitemsale(
 				const name& collection_name,
 				const name& author_id,
 				const asset& listing_price_crypto,
-				const string& listing_price_fiat,
+				float listing_price_fiat,
 			)
 {
 	require_auth(get_self());
 
+	// extract the asset_id from item_id
+	uint64_t asset_id = str_to_uint64t(std::to_string(item_id).substr(0, 14));
+
+	
+
+	// check whether the item_id's collection_name is valid for the given author_id, item_id
+
+	// check 
 	
 }

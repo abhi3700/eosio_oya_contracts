@@ -221,7 +221,7 @@ public:
 				const name& collection_name,
 				const name& author_id,
 				const asset& listing_price_crypto,
-				const string& listing_price_fiat,
+				float listing_price_fiat,
 			);
 
 	/**
@@ -258,7 +258,7 @@ public:
 				const name& collection_name,
 				const name& author_id,
 				const asset& current_bid_crypto,
-				const string& current_bid_fiat,
+				float current_bid_fiat,
 			);
 
 
@@ -365,7 +365,7 @@ public:
 		uint64_t asset_id;			// asset id
 		uint64_t seller_id;				// seller telegram_id
 		asset listing_price_crypto;		// listing price of asset in crypto (if opted for crypto)
-		string listing_price_fiat;		// listing price of asset in fiat (if opted for fiat)
+		float listing_price_fiat_usd;		// listing price of asset in fiat in USD (if opted for fiat)
 		uint64_t buyer_id;				// buyer telegram_id
 		name collection_name;		// collection name
 		float royalty_fee;			// collection/royalty fee
@@ -399,7 +399,7 @@ public:
 		uint64_t start_time;		// auction start time
 		uint64_t end_time;			// auction end time
 		asset current_bid_crypto;			// current bid of asset in crypto (if opted for crypto)
-		string current_bid_fiat;			// current bid of asset in fiat (if opted for fiat)
+		float current_bid_fiat_usd;			// current bid of asset in fiat in USD (if opted for fiat)
 		uint64_t current_bidder_id;		// current bidder telegram_id
 		bool claimed_by_seller;		// claimed by seller
 		bool claimed_by_buyer;		// claimed by buyer
@@ -427,7 +427,6 @@ public:
 	// -----------------------------------------------------------------------------------------------------------------------
 	inline bool has_item_in_vector( const vector<uint64_t>& vec, uint64_t item) {
 		bool found = false;
-		// todo: write logic;
 		if (std::find(vec.begin(), vec.end(), item) !=  vec.end())
 			found = true;
 		return found;
