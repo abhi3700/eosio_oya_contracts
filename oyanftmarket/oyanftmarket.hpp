@@ -105,7 +105,6 @@ public:
 				const checksum256& asset_img_hash,
 				const checksum256& asset_vid_hash,
 				const checksum256& asset_gif_hash,
-				uint64_t asset_copies_qty_used,
 				uint64_t asset_copies_qty_total,
 				float asset_royaltyfee,
 				const string& asset_artist
@@ -204,40 +203,54 @@ public:
 
 
 	/**
-	 * @brief - list item on sale
-	 * @details - list item on sale
+	 * @brief - list item(s) on sale
+	 * @details - list item(s) on sale
 	 * 
 	 * @param item_id - item id
 	 * @param collection_name - collection name
-	 * @param author_id - author id
+	 * @param seller_id - author/owner id
 	 * @param listing_price_crypto - price in crypto
-	 * @param listing_price_fiat - price in fiat
+	 * @param listing_price_fiat_usd - price in fiat (usd)
 	 * 
 	 * @pre - match the chat_id in telegram with the author_id for user verification
 	 * @pre - item must not be listed before (in 'sales' & 'auction' TABLE)
+	 * 
+	 * @post - increase the asset_copies_qty_listed by sale_it->item_ids.size() 
 	 */
 	ACTION listitemsale(
 				uint64_t item_id,
 				const name& collection_name,
-				const name& author_id,
+				const name& seller_id,
 				const asset& listing_price_crypto,
-				float listing_price_fiat,
+				float listing_price_fiat_usd,
+			);
+
+	ACTION additemsale(
+				uint64_t sale_id, 
+				uint64_t item_id
+			);
+
+	ACTION setitmprsale(
+				uint64_t sale_id,
+				const asset& listing_price_crypto,
+				float listing_price_fiat_usd
 			);
 
 	/**
-	 * @brief - unlist item on sale
-	 * @details - unlist item on sale
+	 * @brief - unlist item(s) on sale
+	 * @details - unlist item(s) on sale
 	 * 
-	 * @param item_id - item id
-	 * @param author_id - author id
+	 * @param sale_id - sale id
+	 * @param seller_id - seller(author/owner) id
 	 * 
 	 * 
-	 * @pre - match the chat_id in telegram with the author_id for user verification
-	 * @pre - item must be listed before on 'sales' TABLE
+	 * @pre - match the chat_id fetched from telegram with the parsed seller_id for user verification
+	 * 
+	 * @post - decrease the asset_copies_qty_listed by sale_it->item_ids.size() 
 	 */
 	ACTION ulistitmsale(
-				uint64_t item_id,
-				const name& author_id
+				uint64_t sale_id,
+				uint64_t seller_id
 			);
 
 	/**
@@ -246,9 +259,9 @@ public:
 	 * 
 	 * @param item_id - item id
 	 * @param collection_name - collection name
-	 * @param author_id - author id
+	 * @param seller_id - seller(author/owner) id
 	 * @param current_bid_crypto - price in crypto
-	 * @param current_bid_fiat - price in fiat
+	 * @param current_bid_usd - price in fiat (usd)
 	 * 
 	 * @pre - match the chat_id in telegram with the author_id for user verification
 	 * @pre - item must not be listed before (in 'sales' & 'auction' TABLE)
@@ -256,9 +269,9 @@ public:
 	ACTION listitemauct(
 				uint64_t item_id,
 				const name& collection_name,
-				const name& author_id,
+				const name& seller_id,
 				const asset& current_bid_crypto,
-				float current_bid_fiat,
+				float current_bid_fiat_usd,
 			);
 
 
@@ -267,14 +280,14 @@ public:
 	 * @details - unlist item on auction
 	 * 
 	 * @param item_id - item id
-	 * @param author_id - author id
+	 * @param seller_id - seller(author/owner) id
 	 * 
 	 * @pre - match the chat_id in telegram with the author_id for user verification
 	 * @pre - item must be listed before in 'auction' TABLE
 	 */
 	ACTION ulistitmauct(
-				uint64_t item_id,
-				const name& author_id,
+				uint64_t auction_id,
+				uint64_t seller_id
 			);
 
 
@@ -336,9 +349,8 @@ public:
 		checksum256 asset_img_hash;		// asset image hash
 		checksum256 asset_vid_hash;		// asset video hash
 		checksum256 asset_gif_hash;		// asset gif hash
-		// map<string, string> asset_trade_ids_success;		// asset trade ids list with order ids (successful ones)
-		// map<string, string> asset_trade_ids_ongoing;		// asset trade ids list with order ids (ongoing ones)
-		uint64_t asset_copies_qty_used;	// asset copies used qty
+		uint64_t asset_copies_qty_listed_sale;	// asset copies listed qty by owner (author (only for 1st sale) or seller). only modifyable when there is a new sale or auction
+		uint64_t asset_copies_qty_listed_auct;	// asset copies listed qty by owner (author (only for 1st sale) or seller). only modifyable when there is a new sale or auction
 		uint64_t asset_copies_qty_total;		// asset copies total qty (if burned an item, then qty is decreased here)
 		float asset_royaltyfee;			// asset royalty fee
 		string asset_artist;				// asset artist

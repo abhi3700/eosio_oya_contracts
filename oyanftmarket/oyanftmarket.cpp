@@ -78,7 +78,6 @@ void oyanftmarket::addmodasset(
 				const checksum256& asset_img_hash,
 				const checksum256& asset_vid_hash,
 				const checksum256& asset_gif_hash,
-				uint64_t asset_copies_qty_used,
 				uint64_t asset_copies_qty_total,
 				float asset_royaltyfee,
 				const string& asset_artist
@@ -108,7 +107,8 @@ void oyanftmarket::addmodasset(
 			row.asset_img_hash = asset_img_hash;
 			row.asset_vid_hash = asset_vid_hash;
 			row.asset_gif_hash = asset_gif_hash;
-			row.asset_copies_qty_used = 0;
+			row.asset_copies_qty_listed_sale = 0;
+			row.asset_copies_qty_listed_auct = 0;
 			row.asset_copies_qty_total = asset_copies_qty_total;
 			row.asset_royaltyfee = asset_royaltyfee;
 			row.asset_artist = asset_artist;
@@ -116,24 +116,11 @@ void oyanftmarket::addmodasset(
 	} else {
 		asset_table.modify(asset_it, get_self(), [&](auto &row){
 			if (current_owner_id != 0 && current_owner_id != author_id) row.current_owner_id = current_owner_id;
-			if (asset_copies_qty_used != 0) row.asset_copies_qty_used += asset_copies_qty_used;
 			if (asset_copies_qty_total != 0) row.asset_copies_qty_total = asset_copies_qty_total;
 			row.asset_royaltyfee = asset_royaltyfee;
 			row.asset_artist = asset_artist;
 		});
 	}
-
-	// add the asset into nftownership table
-	// nftownership_index nftownership_table(get_self(), author_id);
-	// auto nftownership_it = nftownership_table.find(collection_name.value);
-
-	// if (nftownership_it == nftownership_table.end()) {
-	// 	nftownership_table.emplace(get_self(), [&](auto &row){
-	// 		row.collection_name = collection_name;
-	// 		row.asset_id = asset_id;
-	// 		row.is_author = author;
-	// 	});
-	// }
 
 }
 
@@ -295,7 +282,7 @@ void oyanftmarket::rmitmother(
 void oyanftmarket::listitemsale(
 				vector<uint64_t> item_ids,
 				const name& collection_name,
-				const name& author_id,
+				const name& seller_id,
 				const asset& listing_price_crypto,
 				float listing_price_fiat,
 			)
@@ -305,13 +292,21 @@ void oyanftmarket::listitemsale(
 	check( item_ids.size() > 0, "there is no item id parsed." );
 
 	// extract the asset_id from item_id
-	uint64_t asset_id = str_to_uint64t(std::to_string(item_id).substr(0, 14));
+	uint64_t asset_id = str_to_uint64t(std::to_string(item_ids[0]).substr(0, 14));
+
+	asset_index asset_table(get_self(), collection_name.value);
+	auto asset_it = asset_table.find(asset_id);
+
+	check(asset_it != asset_table.end(), "there is no such asset id for the parsed collection name");
+
+	check( (asset_it->asset_copies_qty_total - asset_it->asset_copies_qty_listed_sale - asset_it->asset_copies_qty_listed_auct) >= item_ids.size(), 
+		"sorry, the no. of items pending for listed is less than the parsed list size." ):
 
 	// create unique sale id i.e. 3700<current_time><last_3_digit_tg_id>
-	auto sale_id = create_saleauc_id(3700, author_id);
+	uint64_t sale_id = create_saleauc_id(3700, asset_it->author_id);
 
 	// check for valid collection name
-	collection_index collection_table(get_self(), author_id);
+	collection_index collection_table(get_self(), asset_it->author_id);
 	auto collection_it = collection_table.find(collection_name.value);
 
 	check(collection_it != collection_table.end(), "The collection is not present for this author.");
@@ -325,7 +320,36 @@ void oyanftmarket::listitemsale(
     check( listing_price_crypto.amount > 0, "crypto qty must be positive");
 
     sale_index sale_table(get_self(), get_self().value);
-    auto 
-    auto sale_it = sale_table.find()
+    auto sale_it = sale_table.find(sale_id);
+
+    check(sale_it == sale_table.end(), "the sale already exist.");
+
+    sale_table.emplace(get_self(), [&](auto &row){
+		row.sale_id = sale_id;
+		row.item_ids = item_ids;
+		row.asset_id = asset_id;
+		row.seller_id = seller_id;		// todo
+		row.listing_price_crypto = listing_price_crypto;
+		row.listing_price_fiat_usd = listing_price_fiat_usd;
+		row.collection_name = collection_name;
+		row.royalty_fee = asset_id->asset_royaltyfee;
+	});
+
+    /*
+    TODO:
+    =====
+	Currently, everytime this ACTION executes, a new sale id is created => by default it will take to creating
+	a new row i.e. sale.
+
+	Now, the problem is for an existing listed item, the sale might be created again.
+
+    */
+
+
+    // increase the 'asset_copies_qty_listed' by item_ids.size() in assets table
+    asset_table.modify(asset_it, get_self(), [&](auto &row){
+		row.asset_copies_qty_listed += item_ids.size();
+	});
+
 
 }
