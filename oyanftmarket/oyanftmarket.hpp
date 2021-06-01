@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <cstdlib>
+#include <algorithm>
 
 
 
@@ -290,20 +291,20 @@ public:
 	using balance_index = multi_index<"balances"_n, balance>
 
 	// -----------------------------------------------------------------------------------------------------------------------
-	// Table for non-author with asset_ids, item_ids
+	// Table for non-author with asset_id (with item_ids)
 	// scope: <nonauthor_telegram_id>
 	TABLE oyanonauthor
 	{
-		name collection_name;			// collection name
 		uint64_t asset_id;				// asset id
+		name collection_name;			// collection name
 		vector<uint64_t> item_ids;			// list of item id for the asset_id
 
-		auto primary_key() const { return collection_name.value; }
-		uint64_t by_asset() const { return asset_id; }
+		auto primary_key() const { return asset_id; }
+		uint64_t by_collection() const { return collection_name.value; }
 	};
 
 	using oyanonauthor_index = multi_index<"oyanonauthor"_n, oyanonauthor,
-								indexed_by< "byasset"_n, const_mem_fun<oyanonauthor, uint64_t, &oyanonauthor::by_asset>>
+								indexed_by< "bycollection"_n, const_mem_fun<oyanonauthor, uint64_t, &oyanonauthor::by_collection>>
 								>;
 
 	// -----------------------------------------------------------------------------------------------------------------------
@@ -427,7 +428,10 @@ public:
 	inline bool has_item_in_vector( const vector<uint64_t>& vec, uint64_t item) {
 		bool found = false;
 		// todo: write logic;
+		if (std::find(vec.begin(), vec.end(), item) !=  vec.end())
+			found = true;
 		return found;
 	}
+
 
 };

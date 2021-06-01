@@ -228,6 +228,7 @@ void oyanftmarket::delitem(
 
 
 
+// --------------------------------------------------------------------------------------------------------------------
 void oyanftmarket::additmother(
 				uint64_t nonauthor_id,
 				const name& collection_name,
@@ -240,21 +241,26 @@ void oyanftmarket::additmother(
 	uint64_t asset_id = str_to_uint64t(std::to_string(item_id).substr(0, 14));
 
 	oyanonauthor_index oyanonauthor_table(get_self(), nonauthor_id);
-	oyanonauthor_it = oyanonauthor_table.find(collection_name.value);
+	oyanonauthor_it = oyanonauthor_table.find(asset_id);
 
 	if (oyanonauthor_it == oyanonauthor_table.end()) {
 		oyanonauthor_table.emplace(get_self(), [&](auto &row){
-			row.collection_name = collection_name;
 			row.asset_id = asset_id;
-			// todo: add item_id
+			row.collection_name = collection_name;
+			row.item_ids = vector<uint64_t>{item_id};
 		});
-	} else {
-		oyanonauthor_table.modify(oyanonauthor_it, get_self(), [&](auto &row){
-			// todo: add item_id
-		});
+	} 
+	else {
+		// add the item if does't exist already in the list
+		if (!has_item_in_vector(oyanonauthor_it->item_ids, item_id)) {
+			oyanonauthor_table.modify(oyanonauthor_it, get_self(), [&](auto &row){
+				row.item_ids.emplace_back(item_id);
+			});
+		}
 	}
 }
 
+// --------------------------------------------------------------------------------------------------------------------
 void oyanftmarket::rmitmother(
 				uint64_t nonauthor_id,
 				uint64_t item_id
@@ -266,15 +272,35 @@ void oyanftmarket::rmitmother(
 	uint64_t asset_id = str_to_uint64t(std::to_string(item_id).substr(0, 14));
 
 	oyanonauthor_index oyanonauthor_table(get_self(), nonauthor_id);
-	asset_oyanonauthor_idx = oyanonauthor_table.get_index<"byasset">();
-	asset_oyanonauthor_it = asset_oyanonauthor_idx.find(asset_id);
+	oyanonauthor_it = oyanonauthor_table.find(asset_id);
 
-	check(asset_oyanonauthor_it != asset_oyanonauthor_idx.end(), "the asset containing this item doesn\'t exist.");
+	check(oyanonauthor_it != oyanonauthor_table.end(), "the asset containing this item doesn\'t exist.");
 
-	// todo: check if item is present in `asset_oyanonauthor_it->item_ids` list
+	// check if item is present in `oyanonauthor_it->item_ids` list
+	check(has_item_in_vector(oyanonauthor->item_ids, item_id), "Sorry!, the item id doesn\'t exist in the items list for the asset id \'" + std::to_string(asset_id) + "\'");
 
-	// todo: delete the asset id if there is no item inside after removing parsed item_id
-	// if( ( asset_oyanonauthor_it->item_ids.size() == 1 ) && (has_item(asset_oyanonauthor_it->item_ids, item_id)) )
-	// asset_oyanonauthor_idx.erase(asset_oyanonauthor_it);
+	auto item_id_it = std::find(oyanonauthor_it->item_ids.begin(), oyanonauthor_it->item_ids.end(), item_id);
+	oyanonauthor_table.modify(oyanonauthor_it, get_self(), [&](auto &row){
+		if (item_id_it != oyanonauthor_it->item_ids.end())
+			row.item_ids.erase(item_id_it);
+	});
 
+	// lastly, delete the asset id row, if there is no item inside list, after removing parsed item_id. This is to restore the contract's RAM.
+	if( oyanonauthor_it->item_ids.size() == 1  )
+		asset_oyanonauthor_idx.erase(asset_oyanonauthor_it);
+
+}
+
+
+void oyanftmarket::listitemsale(
+				uint64_t item_id,
+				const name& collection_name,
+				const name& author_id,
+				const asset& listing_price_crypto,
+				const string& listing_price_fiat,
+			)
+{
+	require_auth(get_self());
+
+	
 }
