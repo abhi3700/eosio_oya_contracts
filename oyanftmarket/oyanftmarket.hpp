@@ -361,18 +361,17 @@ public:
 	TABLE sale
 	{
 		uint64_t sale_id;		// sale_id id. 3700<start_time>
-		uint64_t item_id;			// item_id format is "<item_id>999999" E.g. if max_copies = 100, then "<asset_id>1" is the 1st item_id. If max_copies = 1, then item_id is "<asset_id>1"
+		vector<uint64_t> item_ids;			//list of item_id format is "<item_id>999999" E.g. if max_copies = 100, then "<asset_id>1" is the 1st item_id. If max_copies = 1, then item_id is "<asset_id>1"
 		uint64_t asset_id;			// asset id
 		uint64_t seller_id;				// seller telegram_id
 		asset listing_price_crypto;		// listing price of asset in crypto (if opted for crypto)
 		float listing_price_fiat_usd;		// listing price of asset in fiat in USD (if opted for fiat)
 		uint64_t buyer_id;				// buyer telegram_id
 		name collection_name;		// collection name
-		float royalty_fee;			// collection/royalty fee
+		float royalty_fee;			// collection/royalty fee, E.g. 5% = 0.05
 
 
 		auto primary_key() const { return sale_id; }
-		uint64_t by_item() const { return item_id; }
 		uint64_t by_asset() const { return asset_id; }
 		uint64_t by_seller() const { return seller_id; }
 		uint64_t by_buyer() const { return buyer_id; }
@@ -380,7 +379,6 @@ public:
 	};
 
 	using sale_index = multi_index<"sales"_n, sale>,
-								indexed_by< "byitem"_n, const_mem_fun<sale, uint64_t, &sale::by_item>>,	
 								indexed_by< "byasset"_n, const_mem_fun<sale, uint64_t, &sale::by_asset>>,
 								indexed_by< "byseller"_n, const_mem_fun<sale, uint64_t, &sale::by_seller>>,
 								indexed_by< "bybuyer"_n, const_mem_fun<sale, uint64_t, &sale::by_buyer>>,
@@ -393,7 +391,7 @@ public:
 	TABLE auction
 	{
 		uint64_t auction_id;		// auction id. 3701<start_time>
-		uint64_t item_id;			// item_id format is "<item_id>99999" E.g. if max_copies = 100, then "<asset_id>1" is the 1st item_id. If max_copies = 1, then item_id is "<asset_id>1"
+		vector<uint64_t> item_ids;			// list of item_id format is "<item_id>99999" E.g. if max_copies = 100, then "<asset_id>1" is the 1st item_id. If max_copies = 1, then item_id is "<asset_id>1"
 		uint64_t asset_id;			// asset id
 		uint64_t seller_id;				// seller telegram_id
 		uint64_t start_time;		// auction start time
@@ -408,7 +406,6 @@ public:
 
 
 		auto primary_key() const { return auction_id; }
-		uint64_t by_item() const { return item_id; }
 		uint64_t by_asset() const { return asset_id; }
 		uint64_t by_seller() const { return seller_id; }
 		uint64_t by_buyer() const { return buyer_id; }
@@ -416,7 +413,6 @@ public:
 	};
 
 	using auction_index = multi_index<"auctions"_n, auction>,
-								indexed_by< "byitem"_n, const_mem_fun<auction, uint64_t, &auction::by_item>>,	
 								indexed_by< "byasset"_n, const_mem_fun<auction, uint64_t, &auction::by_asset>>,
 								indexed_by< "byseller"_n, const_mem_fun<auction, uint64_t, &auction::by_seller>>,
 								indexed_by< "bybuyer"_n, const_mem_fun<auction, uint64_t, &auction::by_buyer>>,
@@ -424,12 +420,34 @@ public:
 								>;
 
 
-	// -----------------------------------------------------------------------------------------------------------------------
+	// ============================================================================================================================
 	inline bool has_item_in_vector( const vector<uint64_t>& vec, uint64_t item) {
 		bool found = false;
 		if (std::find(vec.begin(), vec.end(), item) !=  vec.end())
 			found = true;
 		return found;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------------
+	// get the current timestamp
+	inline uint32_t now() const {
+		return current_time_point().sec_since_epoch();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------------
+	inline uint64_t create_saleauc_id(int init_num, uint64_t author_id) {
+		// capture last 3 digits of telegram id
+		// 1. divide by 1000, & save as string
+		double res = (double)author_id/1000;
+		auto res_str = std::to_string(res);
+		// 2. snip the last 3 digits after decimal now. find position of .
+		string author_id_last3 = res_str.substr(res_str.find(".")+1, 3);  
+
+		// create unique sale id i.e. 3700<current_time><last_3_digit_tg_id>
+		// create unique auction id i.e. 3701<current_time><last_3_digit_tg_id>
+		uint64_t sale_id = str_to_uint64t(std::to_string(init_num).append(std::to_string(now())).append(author_id_last3));
+
+		return saleauc_id;
 	}
 
 

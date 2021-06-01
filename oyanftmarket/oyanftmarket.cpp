@@ -43,7 +43,7 @@ void oyanftmarket::delcol(
 	collection_index collection_table(get_self(), author_id);
 	auto collection_it = collection_table.find(collection_name.value);
 
-	check(collection_it != collection_table.end(), "The collection is not present.");
+	check(collection_it != collection_table.end(), "The collection is not present for this author.");
 
 
 	// check that the collection is neither listed in sale nor auction table
@@ -277,7 +277,7 @@ void oyanftmarket::rmitmother(
 	check(oyanonauthor_it != oyanonauthor_table.end(), "the asset containing this item doesn\'t exist.");
 
 	// check if item is present in `oyanonauthor_it->item_ids` list
-	check(has_item_in_vector(oyanonauthor->item_ids, item_id), "Sorry!, the item id doesn\'t exist in the items list for the asset id \'" + std::to_string(asset_id) + "\'");
+	check(has_item_in_vector(oyanonauthor->item_ids, item_id), ("Sorry!, the item id doesn\'t exist in the items list for the asset id \'").append(std::to_string(asset_id)).append("\'") );
 
 	auto item_id_it = std::find(oyanonauthor_it->item_ids.begin(), oyanonauthor_it->item_ids.end(), item_id);
 	oyanonauthor_table.modify(oyanonauthor_it, get_self(), [&](auto &row){
@@ -293,7 +293,7 @@ void oyanftmarket::rmitmother(
 
 
 void oyanftmarket::listitemsale(
-				uint64_t item_id,
+				vector<uint64_t> item_ids,
 				const name& collection_name,
 				const name& author_id,
 				const asset& listing_price_crypto,
@@ -302,13 +302,30 @@ void oyanftmarket::listitemsale(
 {
 	require_auth(get_self());
 
+	check( item_ids.size() > 0, "there is no item id parsed." );
+
 	// extract the asset_id from item_id
 	uint64_t asset_id = str_to_uint64t(std::to_string(item_id).substr(0, 14));
 
-	
+	// create unique sale id i.e. 3700<current_time><last_3_digit_tg_id>
+	auto sale_id = create_saleauc_id(3700, author_id);
 
-	// check whether the item_id's collection_name is valid for the given author_id, item_id
+	// check for valid collection name
+	collection_index collection_table(get_self(), author_id);
+	auto collection_it = collection_table.find(collection_name.value);
 
-	// check 
-	
+	check(collection_it != collection_table.end(), "The collection is not present for this author.");
+
+	asset_index asset_table(get_self(), collection_name.value);
+	auto asset_it = asset_table.find(asset_id);
+
+	check(asset_it != asset_table.end(), "The asset id is not available for the parsed collection");
+
+    check( listing_price_crypto.is_valid(), "invalid price in crypto");
+    check( listing_price_crypto.amount > 0, "crypto qty must be positive");
+
+    sale_index sale_table(get_self(), get_self().value);
+    auto 
+    auto sale_it = sale_table.find()
+
 }
