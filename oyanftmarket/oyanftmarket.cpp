@@ -2,12 +2,12 @@
 
 // --------------------------------------------------------------------------------------------------------------------
 void oyanftmarket::addmodcol(
-			uint64_t creator_id,
-			const name& collection_name,
-			const string& collection_displayname,
-			const string& collection_desc,
-			const string& collection_url,
-		)
+				uint64_t creator_id,
+				const name& collection_name,
+				const string& collection_displayname,
+				const string& collection_desc,
+				const string& collection_url,
+			)
 {
 	require_auth(get_self());
 
@@ -34,9 +34,8 @@ void oyanftmarket::addmodcol(
 
 // --------------------------------------------------------------------------------------------------------------------
 void oyanftmarket::delcol(
-				const name& collection_name,
-				uint64_t asset_id,
-				uint64_t creator_id
+				uint64_t creator_id,
+				const name& collection_name
 			)
 {
 	require_auth(get_self());
@@ -72,7 +71,6 @@ void oyanftmarket::delcol(
 // --------------------------------------------------------------------------------------------------------------------
 void oyanftmarket::addmodasset(
 				const name& collection_name,
-				uint64_t asset_id,
 				uint64_t creator_id,
 				uint64_t current_owner_id,
 				const string& asset_name,
@@ -98,6 +96,9 @@ void oyanftmarket::addmodasset(
 
 	// check positive royaltyfee
 	check(asset_royaltyfee >= 0, "royalty fee can't be negative");
+
+	// create unique asset id i.e. 9210<current_time><last_3_digit_tg_id>
+	uint64_t asset_id = create_astsaleauc_id(9210, creator_id);
 
 	asset_index asset_table(get_self(), collection_name.value);
 	auto asset_it = asset_table.find(asset_id);
@@ -168,9 +169,6 @@ void oyanftmarket::delasset(
 
 	check(asset_auction_it == asset_auction_idx.end(), "The asset is listed in auction, so can\'t be deleted.");
 
-	// remove the asset from nftownership table
-
-
 	// Instantiate the asset table
 	asset_index asset_table(get_self(), collection_name.value);
 	auto asset_it = asset_table.find(asset_id);
@@ -179,15 +177,14 @@ void oyanftmarket::delasset(
 
 	asset_table.erase(asset_it);
 
-
-
 }
 
 // --------------------------------------------------------------------------------------------------------------------
 void oyanftmarket::delitem(
 				const name& collection_name,
-				uint64_t item_id,
-				uint64_t creator_id
+				uint64_t asset_id,
+				uint64_t creator_id,
+				uint64_t item_qty,
 			)
 {
 	require_auth(get_self());
@@ -196,30 +193,23 @@ void oyanftmarket::delitem(
 	collection_index collection_table(get_self(), creator_id);
 	auto collection_it = collection_table.find(collection_name.value);
 
-	check(collection_it != collection_table.end(), "The collection is not present.");
+	check(collection_it != collection_table.end(), "The collection is not present for this creator.");
 
-	// extract the asset_id from item_id
-	// uint64_t asset_id = str_to_uint64t(std::to_string(item_id).substr(0, 14));
+	// check for valid item id by checking asset id existence 
+	asset_index asset_table(get_self(), collection_name.value);
+	auto asset_it = asset_table.find(asset_id);
 
-	// check that the item is neither listed in sale nor auction table
-	// 1. Sale
-	sale_index sale_table(get_self(), get_self().value);
-	auto item_sale_idx = sale_table.get_index<"byitem"_n>();
-	auto item_sale_it = item_sale_idx.find(item_id);
+	check(asset_it != asset_table.end(), "the item id doesn\'t belong to any existing asset for this creator.");
 
-	check(item_sale_it == item_sale_idx.end(), "The item is listed in sale, so can\'t be deleted.");
+	check(item_qty > 0, "item quantity must be positive and at least 1 as value.");
 
-	// 2. Auction
-	auction_index auction_table(get_self(), get_self().value);
-	auto item_auction_idx = auction_table.get_index<"byitem"_n>();
-	auto item_auction_it = item_auction_idx.find(item_id);
+	// reduce by item_qty from remaining qty i.e. (asset_copies_qty_total - listed_sale_qty - listed_auction_qty) in asset table
+	check( (asset_it->asset_copies_qty_total - asset_it->asset_copies_qty_listed_sale - asset_it->asset_copies_qty_listed_auct) >= item_qty, 
+		"sorry, the no. of items not listed is less than the item qty to be deleted." ):
 
-	check(item_auction_it == item_auction_idx.end(), "The asset is listed in auction, so can\'t be deleted.");
-
-	// todo: reduce by 1 from both `asset_copies_qty_total` & 'asset_copies_qty_used' in asset table
-	
-
-	// todo: remove the item_id from oyanocreator table 
+	asset_table.modify(asset_it, get_self(), [&](auto &row){
+		row.asset_copies_qty_total -= item_qty;
+	});
 
 }
 
@@ -313,7 +303,7 @@ void oyanftmarket::listitemsale(
 		"sorry, the no. of items pending for listed is less than the parsed list size." ):
 
 	// create unique sale id i.e. 3700<current_time><last_3_digit_tg_id>
-	uint64_t sale_id = create_saleauc_id(3700, asset_it->creator_id);
+	uint64_t sale_id = create_astsaleauc_id(3700, asset_it->creator_id);
 
 	// check for valid collection name
 	collection_index collection_table(get_self(), asset_it->creator_id);

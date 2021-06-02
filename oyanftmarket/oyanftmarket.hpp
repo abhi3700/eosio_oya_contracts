@@ -50,6 +50,7 @@ public:
 	 * 
 	 * @param creator_id - creator telegram_id (fetched directly from private chat)
 	 * @param collection_name - collection name
+	 * @param collection_displayname - collection display name
 	 * @param collection_desc - collection description
 	 * @param collection_url - collection url
 	 * 
@@ -57,6 +58,7 @@ public:
 	ACTION addmodcol(
 				uint64_t creator_id,
 				const name& collection_name,
+				const string& collection_displayname,
 				const string& collection_desc,
 				const string& collection_url,
 			);
@@ -72,7 +74,7 @@ public:
 	 */
 	ACTION delcol(
 				uint64_t creator_id,
-				const name& collection_name,
+				const name& collection_name
 			);
 
 	/**
@@ -80,8 +82,8 @@ public:
 	 * @details - Add or modify asset in a collection
 	 * 
 	 * @param collection_name - collection name
-	 * @param asset_id - asset id (to be created from outside) as 9210<current_timestamp>
 	 * @param creator_id - creator telegram_id (fetched directly from private chat)
+	 * @param current_owner_id - current owner id
 	 * @param asset_name - asset name
 	 * @param asset_desc - asset description
 	 * @param asset_img_hash - asset image hash
@@ -97,7 +99,6 @@ public:
 	 */
 	ACTION addmodasset(
 				const name& collection_name,
-				uint64_t asset_id,
 				uint64_t creator_id,
 				uint64_t current_owner_id,
 				const string& asset_name,
@@ -128,21 +129,22 @@ public:
 			);
 
 	/**
-	 * @brief - delete item from an asset
-	 * @details - delete item from an asset
+	 * @brief - delete item (copies) from an asset
+	 * @details - delete item (copies) from an asset or burn asset copy/copies
 	 * 
 	 * @param collection_name - collection name
-	 * @param item_id - item id
+	 * @param asset_id - asset id
 	 * @param creator_id - creator id (fetched directly from private chat)
+	 * @param item_qty - item qty
 	 * 
 	 * @pre - match the chat_id in telegram with the creator_id for user verification
-	 * @pre - ensure that the item_id is not listed
-	 * @pre - ensure that the item_id is not listed. Search by item_id in sales & auctions tables
+	 * @pre - ensure that the remaining item to be listed is >= parsed item_qty
 	 */
 	ACTION delitem(
 				const name& collection_name,
-				uint64_t item_id,
-				uint64_t creator_id
+				uint64_t asset_id,
+				uint64_t creator_id,
+				uint64_t item_qty,
 			);
 
 
@@ -329,8 +331,6 @@ public:
 		string collection_displayname;	// collection display name
 		string collection_desc;			// collection description
 		string collection_url;			// collection url
-		// uint64_t collection_item_qty;	// collection item qty
-		// vector<uint64_t> collection_item_ids;	// collection item ids	
 
 
 		auto primary_key() const { return collection_name.value; }
@@ -342,8 +342,8 @@ public:
 	// scope: <collection_name>
 	TABLE asset
 	{
-		uint64_t asset_id;				// asset id. Another is asset_id i.e. 9210<start_time><max copies upto 99999> E.g. if max_copies = 100, then 9210<start_time>1 is the 1st asset_id. This is shown in the auctions, sales TABLE
-		uint64_t creator_id;				// creator telegram_id		
+		uint64_t asset_id;				// asset id. Another is item_id i.e. 9210<current_time><max copies upto 99999> E.g. if max_copies = 100, then 9210<start_time>1 is the 1st item_id. This is shown in the auctions, sales TABLE
+		uint64_t creator_id;			// creator telegram_id		
 		uint64_t current_owner_id;		// current owner telegram_id
 		string asset_name;				// asset name
 		string asset_desc;				// asset description
@@ -373,7 +373,7 @@ public:
 	// scope: self i.e. oyanftmarket
 	TABLE sale
 	{
-		uint64_t sale_id;		// sale_id id. 3700<start_time>
+		uint64_t sale_id;		// sale_id id. 3700<start_time><last_3_digit_tg_id>
 		vector<uint64_t> item_ids;			//list of item_id format is "<item_id>999999" E.g. if max_copies = 100, then "<asset_id>1" is the 1st item_id. If max_copies = 1, then item_id is "<asset_id>1"
 		uint64_t asset_id;			// asset id
 		uint64_t seller_id;				// seller telegram_id
@@ -403,7 +403,7 @@ public:
 	// scope: self i.e. oyanftmarket
 	TABLE auction
 	{
-		uint64_t auction_id;		// auction id. 3701<start_time>
+		uint64_t auction_id;		// auction id. 3701<start_time><last_3_digit_tg_id>
 		vector<uint64_t> item_ids;			// list of item_id format is "<item_id>99999" E.g. if max_copies = 100, then "<asset_id>1" is the 1st item_id. If max_copies = 1, then item_id is "<asset_id>1"
 		uint64_t asset_id;			// asset id
 		uint64_t seller_id;				// seller telegram_id
@@ -448,7 +448,7 @@ public:
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------------
-	inline uint64_t create_saleauc_id(int init_num, uint64_t creator_id) {
+	inline uint64_t create_astsaleauc_id(int init_num, uint64_t creator_id) {
 		// capture last 3 digits of telegram id
 		// 1. divide by 1000, & save as string
 		double res = (double)creator_id/1000;
