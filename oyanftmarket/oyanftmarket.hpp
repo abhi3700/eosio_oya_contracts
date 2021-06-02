@@ -48,14 +48,14 @@ public:
 	 * @brief - Add or modify collection
 	 * @details - Add or modify collection
 	 * 
-	 * @param author_id - author telegram_id (fetched directly from private chat)
+	 * @param creator_id - creator telegram_id (fetched directly from private chat)
 	 * @param collection_name - collection name
 	 * @param collection_desc - collection description
 	 * @param collection_url - collection url
 	 * 
 	 */
 	ACTION addmodcol(
-				uint64_t author_id,
+				uint64_t creator_id,
 				const name& collection_name,
 				const string& collection_desc,
 				const string& collection_url,
@@ -65,13 +65,13 @@ public:
 	 * @brief - delete collection
 	 * @details - delete collection
 	 * 
-	 * @param author_id - author telegram_id (fetched directly from private chat)
+	 * @param creator_id - creator telegram_id (fetched directly from private chat)
 	 * @param collection_name - collection name
 	 * 
 	 * @pre - ensure that collection (search by asset_id in sales & auction tables) is not listed in sale or auction
 	 */
 	ACTION delcol(
-				uint64_t author_id,
+				uint64_t creator_id,
 				const name& collection_name,
 			);
 
@@ -81,7 +81,7 @@ public:
 	 * 
 	 * @param collection_name - collection name
 	 * @param asset_id - asset id (to be created from outside) as 9210<current_timestamp>
-	 * @param author_id - author telegram_id (fetched directly from private chat)
+	 * @param creator_id - creator telegram_id (fetched directly from private chat)
 	 * @param asset_name - asset name
 	 * @param asset_desc - asset description
 	 * @param asset_img_hash - asset image hash
@@ -98,7 +98,7 @@ public:
 	ACTION addmodasset(
 				const name& collection_name,
 				uint64_t asset_id,
-				uint64_t author_id,
+				uint64_t creator_id,
 				uint64_t current_owner_id,
 				const string& asset_name,
 				const string& asset_desc,
@@ -116,15 +116,15 @@ public:
 	 * 
 	 * @param collection_name - collection name
 	 * @param asset_id - asset id
-	 * @param author_id - author id (fetched directly from private chat)
+	 * @param creator_id - creator id (fetched directly from private chat)
 	 * 
-	 * @pre - match the 'chat_id' in telegram with the 'author_id' for user verification
+	 * @pre - match the 'chat_id' in telegram with the 'creator_id' for user verification
 	 * @pre - ensure that any of the asset's items (search by asset_id in sales & auction tables) is not listed
 	 */
 	ACTION delasset(
 				const name& collection_name,
 				uint64_t asset_id,
-				uint64_t author_id
+				uint64_t creator_id
 			);
 
 	/**
@@ -133,71 +133,71 @@ public:
 	 * 
 	 * @param collection_name - collection name
 	 * @param item_id - item id
-	 * @param author_id - author id (fetched directly from private chat)
+	 * @param creator_id - creator id (fetched directly from private chat)
 	 * 
-	 * @pre - match the chat_id in telegram with the author_id for user verification
+	 * @pre - match the chat_id in telegram with the creator_id for user verification
 	 * @pre - ensure that the item_id is not listed
 	 * @pre - ensure that the item_id is not listed. Search by item_id in sales & auctions tables
 	 */
 	ACTION delitem(
 				const name& collection_name,
 				uint64_t item_id,
-				uint64_t author_id
+				uint64_t creator_id
 			);
 
 
 	// /**
-	//  * @brief - add/modify asset into nftownership table for non-author
-	//  * @details - add/modify asset into nftownership table for non-author
+	//  * @brief - add/modify asset into nftownership table for non-creator
+	//  * @details - add/modify asset into nftownership table for non-creator
 	//  * 
-	//  * @param nonauthor_id - nonauthor id
+	//  * @param noncreator_id - noncreator id
 	//  * @param collection_name - collection name
 	//  * @param asset_id - asset id
 	//  */
 	// ACTION addastother(
-	// 			uint64_t nonauthor_id,
+	// 			uint64_t noncreator_id,
 	// 			const name& collection_name,
 	// 			uint64_t asset_id,
 	// 		);
 
 	// /**
-	//  * @brief - delete asset into nftownership table for non-author
-	//  * @details - delete asset into nftownership table for non-author
+	//  * @brief - delete asset into nftownership table for non-creator
+	//  * @details - delete asset into nftownership table for non-creator
 	//  * 
-	//  * @param owner_id - nonauthor id
+	//  * @param owner_id - noncreator id
 	//  * @param collection_name - collection name
 	//  * @param asset_id - asset id
 	//  */
 	// ACTION delastother(
-	// 			uint64_t nonauthor_id,
+	// 			uint64_t noncreator_id,
 	// 			const name& collection_name,
 	// 			uint64_t asset_id,
 	// 		);
 
 	/**
-	 * @brief - add/modify item into nftownership table for non-author
-	 * @details - add/modify item into nftownership table for non-author
+	 * @brief - add/modify item into nftownership table for non-creator
+	 * @details - add/modify item into nftownership table for non-creator
 	 * 
-	 * @param owner_id - nonauthor id
+	 * @param owner_id - noncreator id
 	 * @param collection_name - collection name
 	 * @param item_id - item id
 	 */
 	ACTION additmother(
-				uint64_t nonauthor_id,
+				uint64_t noncreator_id,
 				const name& collection_name,
 				uint64_t item_id
 			);
 
 
 	/**
-	 * @brief - remove item into nftownership table for non-author
-	 * @details - remove item into nftownership table for non-author
+	 * @brief - remove item into nftownership table for non-creator
+	 * @details - remove item into nftownership table for non-creator
 	 * 
-	 * @param nonauthor_id - nonauthor id
+	 * @param noncreator_id - noncreator id
 	 * @param item_id - item id
 	 */
 	ACTION rmitmother(
-				uint64_t nonauthor_id,
+				uint64_t noncreator_id,
 				uint64_t item_id
 			);
 
@@ -208,11 +208,11 @@ public:
 	 * 
 	 * @param item_id - item id
 	 * @param collection_name - collection name
-	 * @param seller_id - author/owner id
+	 * @param seller_id - creator/owner id
 	 * @param listing_price_crypto - price in crypto
 	 * @param listing_price_fiat_usd - price in fiat (usd)
 	 * 
-	 * @pre - match the chat_id in telegram with the author_id for user verification
+	 * @pre - match the chat_id in telegram with the creator_id for user verification
 	 * @pre - item must not be listed before (in 'sales' & 'auction' TABLE)
 	 * 
 	 * @post - increase the asset_copies_qty_listed by sale_it->item_ids.size() 
@@ -241,7 +241,7 @@ public:
 	 * @details - unlist item(s) on sale
 	 * 
 	 * @param sale_id - sale id
-	 * @param seller_id - seller(author/owner) id
+	 * @param seller_id - seller(creator/owner) id
 	 * 
 	 * 
 	 * @pre - match the chat_id fetched from telegram with the parsed seller_id for user verification
@@ -259,11 +259,11 @@ public:
 	 * 
 	 * @param item_id - item id
 	 * @param collection_name - collection name
-	 * @param seller_id - seller(author/owner) id
+	 * @param seller_id - seller(creator/owner) id
 	 * @param current_bid_crypto - price in crypto
 	 * @param current_bid_usd - price in fiat (usd)
 	 * 
-	 * @pre - match the chat_id in telegram with the author_id for user verification
+	 * @pre - match the chat_id in telegram with the creator_id for user verification
 	 * @pre - item must not be listed before (in 'sales' & 'auction' TABLE)
 	 */
 	ACTION listitemauct(
@@ -280,9 +280,9 @@ public:
 	 * @details - unlist item on auction
 	 * 
 	 * @param item_id - item id
-	 * @param seller_id - seller(author/owner) id
+	 * @param seller_id - seller(creator/owner) id
 	 * 
-	 * @pre - match the chat_id in telegram with the author_id for user verification
+	 * @pre - match the chat_id in telegram with the creator_id for user verification
 	 * @pre - item must be listed before in 'auction' TABLE
 	 */
 	ACTION ulistitmauct(
@@ -304,9 +304,9 @@ public:
 	using balance_index = multi_index<"balances"_n, balance>
 
 	// -----------------------------------------------------------------------------------------------------------------------
-	// Table for non-author with asset_id (with item_ids)
-	// scope: <nonauthor_telegram_id>
-	TABLE oyanonauthor
+	// Table for non-creator with asset_id (with item_ids)
+	// scope: <noncreator_telegram_id>
+	TABLE oyanocreator
 	{
 		uint64_t asset_id;				// asset id
 		name collection_name;			// collection name
@@ -316,15 +316,15 @@ public:
 		uint64_t by_collection() const { return collection_name.value; }
 	};
 
-	using oyanonauthor_index = multi_index<"oyanonauthor"_n, oyanonauthor,
-								indexed_by< "bycollection"_n, const_mem_fun<oyanonauthor, uint64_t, &oyanonauthor::by_collection>>
+	using oyanocreator_index = multi_index<"oyanocreator"_n, oyanocreator,
+								indexed_by< "bycollection"_n, const_mem_fun<oyanocreator, uint64_t, &oyanocreator::by_collection>>
 								>;
 
 	// -----------------------------------------------------------------------------------------------------------------------
-	// scope: <author_telegram_id>
+	// scope: <creator_telegram_id>
 	TABLE collection
 	{
-		// name author;					// collection author name [DISABLED for Telegram Bot, as there is no EOSIO account for users needed]
+		// name creator;					// collection creator name [DISABLED for Telegram Bot, as there is no EOSIO account for users needed]
 		name collection_name;			// collection name
 		string collection_desc;			// collection description
 		string collection_url;			// collection url
@@ -342,27 +342,27 @@ public:
 	TABLE asset
 	{
 		uint64_t asset_id;				// asset id. Another is asset_id i.e. 9210<start_time><max copies upto 99999> E.g. if max_copies = 100, then 9210<start_time>1 is the 1st asset_id. This is shown in the auctions, sales TABLE
-		uint64_t author_id;				// author telegram_id		
+		uint64_t creator_id;				// creator telegram_id		
 		uint64_t current_owner_id;		// current owner telegram_id
 		string asset_name;				// asset name
 		string asset_desc;				// asset description
 		checksum256 asset_img_hash;		// asset image hash
 		checksum256 asset_vid_hash;		// asset video hash
 		checksum256 asset_gif_hash;		// asset gif hash
-		uint64_t asset_copies_qty_listed_sale;	// asset copies listed qty by owner (author (only for 1st sale) or seller). only modifyable when there is a new sale or auction
-		uint64_t asset_copies_qty_listed_auct;	// asset copies listed qty by owner (author (only for 1st sale) or seller). only modifyable when there is a new sale or auction
+		uint64_t asset_copies_qty_listed_sale;	// asset copies listed qty by owner (creator (only for 1st sale) or seller). only modifyable when there is a new sale or auction
+		uint64_t asset_copies_qty_listed_auct;	// asset copies listed qty by owner (creator (only for 1st sale) or seller). only modifyable when there is a new sale or auction
 		uint64_t asset_copies_qty_total;		// asset copies total qty (if burned an item, then qty is decreased here)
 		float asset_royaltyfee;			// asset royalty fee
 		string asset_artist;				// asset artist
 
 
 		auto primary_key() const { return asset_id; }
-		uint64_t by_author() const { return author_id; }
+		uint64_t by_creator() const { return creator_id; }
 		uint64_t by_curr_owner() const { return current_owner_id; }
 	};
 
 	using asset_index = multi_index<"assets"_n, asset,
-								indexed_by< "byauthor"_n, const_mem_fun<asset, uint64_t, &asset::by_author>>,	
+								indexed_by< "bycreator"_n, const_mem_fun<asset, uint64_t, &asset::by_creator>>,	
 								indexed_by< "bycurrowner"_n, const_mem_fun<asset, uint64_t, &asset::by_curr_owner>>	
 								>;
 
@@ -447,17 +447,17 @@ public:
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------------
-	inline uint64_t create_saleauc_id(int init_num, uint64_t author_id) {
+	inline uint64_t create_saleauc_id(int init_num, uint64_t creator_id) {
 		// capture last 3 digits of telegram id
 		// 1. divide by 1000, & save as string
-		double res = (double)author_id/1000;
+		double res = (double)creator_id/1000;
 		auto res_str = std::to_string(res);
 		// 2. snip the last 3 digits after decimal now. find position of .
-		string author_id_last3 = res_str.substr(res_str.find(".")+1, 3);  
+		string creator_id_last3 = res_str.substr(res_str.find(".")+1, 3);  
 
 		// create unique sale id i.e. 3700<current_time><last_3_digit_tg_id>
 		// create unique auction id i.e. 3701<current_time><last_3_digit_tg_id>
-		uint64_t sale_id = str_to_uint64t(std::to_string(init_num).append(std::to_string(now())).append(author_id_last3));
+		uint64_t sale_id = str_to_uint64t(std::to_string(init_num).append(std::to_string(now())).append(creator_id_last3));
 
 		return saleauc_id;
 	}
