@@ -326,6 +326,7 @@ public:
 	{
 		// name creator;					// collection creator name [DISABLED for Telegram Bot, as there is no EOSIO account for users needed]
 		name collection_name;			// collection name
+		string collection_displayname;	// collection display name
 		string collection_desc;			// collection description
 		string collection_url;			// collection url
 		// uint64_t collection_item_qty;	// collection item qty

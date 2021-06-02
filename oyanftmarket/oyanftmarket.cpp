@@ -4,6 +4,7 @@
 void oyanftmarket::addmodcol(
 			uint64_t creator_id,
 			const name& collection_name,
+			const string& collection_displayname,
 			const string& collection_desc,
 			const string& collection_url,
 		)
@@ -16,13 +17,14 @@ void oyanftmarket::addmodcol(
 	if (collection_it == collection_table.end()) {
 		collection_table.emplace(get_self(), [&](auto &row){
 			row.collection_name = collection_name;
+			row.collection_displayname = collection_displayname;
 			row.collection_desc = collection_desc;
 			row.collection_url = collection_url;
 		});
 	} else {
 		collection_table.modify(collection_it, get_self(), [&](auto &row){
-			if (collection_name != ""_n) row.collection_name = collection_name;
-			if (!collection_name.empty()) row.collection_desc = collection_desc;
+			if (!collection_displayname.empty()) row.collection_displayname = collection_displayname;
+			if (!collection_desc.empty()) row.collection_desc = collection_desc;
 			if (!collection_url.empty()) row.collection_url = collection_url;
 		});
 	}
