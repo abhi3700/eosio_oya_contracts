@@ -149,8 +149,8 @@ public:
 
 
 	// /**
-	//  * @brief - add/modify asset into nftownership table for non-creator
-	//  * @details - add/modify asset into nftownership table for non-creator
+	//  * @brief - add/modify asset into oyanocreator table for non-creator
+	//  * @details - add/modify asset into oyanocreator table for non-creator
 	//  * 
 	//  * @param noncreator_id - noncreator id
 	//  * @param collection_name - collection name
@@ -163,8 +163,8 @@ public:
 	// 		);
 
 	// /**
-	//  * @brief - delete asset into nftownership table for non-creator
-	//  * @details - delete asset into nftownership table for non-creator
+	//  * @brief - delete asset into oyanocreator table for non-creator
+	//  * @details - delete asset into oyanocreator table for non-creator
 	//  * 
 	//  * @param owner_id - noncreator id
 	//  * @param collection_name - collection name
@@ -177,14 +177,14 @@ public:
 	// 		);
 
 	/**
-	 * @brief - add/modify item into nftownership table for non-creator
-	 * @details - add/modify item into nftownership table for non-creator
+	 * @brief - add/modify item into oyanocreator table for non-creator
+	 * @details - add/modify item into oyanocreator table for non-creator
 	 * 
 	 * @param owner_id - noncreator id
 	 * @param collection_name - collection name
 	 * @param item_id - item id
 	 */
-	ACTION additmother(
+	ACTION additemnctor(
 				uint64_t noncreator_id,
 				const name& collection_name,
 				uint64_t item_id
@@ -192,45 +192,66 @@ public:
 
 
 	/**
-	 * @brief - remove item into nftownership table for non-creator
-	 * @details - remove item into nftownership table for non-creator
+	 * @brief - remove/burn/destroy item_id into oyanocreator table for non-creator
+	 * @details - remove/burn/destroy item_id into oyanocreator table for non-creator
 	 * 
 	 * @param noncreator_id - noncreator id
 	 * @param item_id - item id
 	 */
-	ACTION rmitmother(
+	ACTION rmitemnctor(
 				uint64_t noncreator_id,
 				uint64_t item_id
 			);
 
 
 	/**
-	 * @brief - list item(s) on sale
-	 * @details - list item(s) on sale
+	 * @brief - list item_id(s) on sale
+	 * @details - list item_id(s) on sale
 	 * 
-	 * @param item_id - item id
+	 * @param seller_id - creator/non-creator id
 	 * @param collection_name - collection name
-	 * @param seller_id - creator/owner id
+	 * @param item_ids - item ids (list multiple items into the market)
 	 * @param listing_price_crypto - price in crypto
 	 * @param listing_price_fiat_usd - price in fiat (usd)
 	 * 
 	 * @pre - match the chat_id in telegram with the creator_id for user verification
-	 * @pre - item must not be listed before (in 'sales' & 'auction' TABLE)
+	 * @pre - item(s) must not be listed before (in 'sales' TABLE)
+	 * @pre - item(s) must not be in asset_item_ids_listed_sale in asset table
+	 * @pre - items must be owned by the seller_id
 	 * 
-	 * @post - increase the asset_copies_qty_listed by sale_it->item_ids.size() 
 	 */
 	ACTION listitemsale(
-				uint64_t item_id,
-				const name& collection_name,
 				const name& seller_id,
+				const name& collection_name,
+				const vector<uint64_t> item_ids,
 				const asset& listing_price_crypto,
-				float listing_price_fiat_usd,
+				float listing_price_fiat,
 			);
 
+	/**
+	 * @brief - unlist a sale
+	 * @details - unlist a sale
+	 * 
+	 * @param sale_id - sale id
+	 * @param seller_id - creator/non-creator id
+	 * @param item_ids - item ids (list multiple items into the market)
+	 * 
+	 * @pre - match the chat_id in telegram with the creator_id for user verification
+	 * @pre - item(s) must not be in asset_item_ids_listed_sale in asset table
+	 * @pre - item(s) must not be listed before (in 'sales' TABLE)
+	 * 
+	 */
 	ACTION additemsale(
+				uint64_t sale_id, 
+				uint64_t seller_id,
+				const vector<uint64_t> item_ids
+			);
+
+	ACTION rmitemsale(
 				uint64_t sale_id, 
 				uint64_t item_id
 			);
+
 
 	ACTION setitmprsale(
 				uint64_t sale_id,
@@ -239,18 +260,19 @@ public:
 			);
 
 	/**
-	 * @brief - unlist item(s) on sale
-	 * @details - unlist item(s) on sale
+	 * @brief - unlist a sale
+	 * @details - unlist a sale
 	 * 
 	 * @param sale_id - sale id
-	 * @param seller_id - seller(creator/owner) id
-	 * 
+	 * @param seller_id - seller(creator/non-creator) id. Seller is the owner
 	 * 
 	 * @pre - match the chat_id fetched from telegram with the parsed seller_id for user verification
+	 * @pre - checked the seller is original
 	 * 
-	 * @post - decrease the asset_copies_qty_listed by sale_it->item_ids.size() 
+	 * @post - remove the item_id(s) also from asset_item_ids_listed_sale in asset table
+	 * 
 	 */
-	ACTION ulistitmsale(
+	ACTION ulistitemsale(
 				uint64_t sale_id,
 				uint64_t seller_id
 			);
@@ -261,7 +283,7 @@ public:
 	 * 
 	 * @param item_id - item id
 	 * @param collection_name - collection name
-	 * @param seller_id - seller(creator/owner) id
+	 * @param seller_id - seller(creator/non-creator) id
 	 * @param current_bid_crypto - price in crypto
 	 * @param current_bid_usd - price in fiat (usd)
 	 * 
@@ -285,7 +307,7 @@ public:
 	 * @param seller_id - seller(creator/owner) id
 	 * 
 	 * @pre - match the chat_id in telegram with the creator_id for user verification
-	 * @pre - item must be listed before in 'auction' TABLE
+	 * @pre - item must not be listed before in 'auction' TABLE
 	 */
 	ACTION ulistitmauct(
 				uint64_t auction_id,
@@ -312,7 +334,7 @@ public:
 	{
 		uint64_t asset_id;				// asset id
 		name collection_name;			// collection name
-		vector<uint64_t> item_ids;			// list of item id for the asset_id
+		vector<uint64_t> item_ids;			// list of item ids for the asset_id
 
 		auto primary_key() const { return asset_id; }
 		uint64_t by_collection() const { return collection_name.value; }
@@ -344,14 +366,15 @@ public:
 	{
 		uint64_t asset_id;				// asset id. Another is item_id i.e. 9210<current_time><max copies upto 99999> E.g. if max_copies = 100, then 9210<start_time>1 is the 1st item_id. This is shown in the auctions, sales TABLE
 		uint64_t creator_id;			// creator telegram_id		
-		uint64_t current_owner_id;		// current owner telegram_id
+		// uint64_t current_owner_id;		// current owner telegram_id [DEPRECATED], there can be many current owners for different item_id(s)
 		string asset_name;				// asset name
 		string asset_desc;				// asset description
 		checksum256 asset_img_hash;		// asset image hash
 		checksum256 asset_vid_hash;		// asset video hash
 		checksum256 asset_gif_hash;		// asset gif hash
-		uint64_t asset_copies_qty_listed_sale;	// asset copies listed qty by owner (creator (only for 1st sale) or seller). only modifyable when there is a new sale or auction
-		uint64_t asset_copies_qty_listed_auct;	// asset copies listed qty by owner (creator (only for 1st sale) or seller). only modifyable when there is a new sale or auction
+		checksum256 asset_file_hash;		// asset file hash (for mp3, mp4, good quality file)
+		vector<uint64_t> asset_item_ids_listed_sale;	// asset copies listed qty by owner (creator (only for 1st sale) or seller). only modifyable when there is a new sale or auction
+		vector<uint64_t> asset_item_ids_listed_auct;	// asset copies listed qty by owner (creator (only for 1st sale) or seller). only modifyable when there is a new sale or auction
 		uint64_t asset_copies_qty_total;		// asset copies total qty (if burned an item, then qty is decreased here)
 		float asset_royaltyfee;			// asset royalty fee
 		string asset_artist;				// asset artist
