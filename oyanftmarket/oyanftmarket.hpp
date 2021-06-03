@@ -35,12 +35,18 @@ using std::vector;
 CONTRACT oyanftmarket : public contract
 {
 private:
+	const vector<symbol> crypto_token_symbol_list;
 
 public:
 	using contract::contract;
 
 	oyanftmarket(name receiver, name code, datastream<const char*> ds) : 
-				contract(receiver, code, ds)
+				contract(receiver, code, ds),
+				crypto_token_symbol_list(vector<symbol>{
+														symbol("EOS", 4), 
+														symbol("TLOS", 4), 
+														symbol("WAX", 4)}
+										)
 				{}
 
 
@@ -229,8 +235,8 @@ public:
 			);
 
 	/**
-	 * @brief - unlist a sale
-	 * @details - unlist a sale
+	 * @brief - add item(s) to an existing sale
+	 * @details - add item(s) to an existing sale
 	 * 
 	 * @param sale_id - sale id
 	 * @param seller_id - creator/non-creator id
@@ -247,14 +253,30 @@ public:
 				const vector<uint64_t> item_ids
 			);
 
+	/**
+	 * @brief - remove item(s) from an existing sale
+	 * @details - remove item(s) from an existing sale
+	 * 
+	 * @param sale_id - sale id
+	 * @param seller_id - creator/non-creator id
+	 * @param item_ids - item ids (list multiple items into the market)
+	 * 
+	 * @pre - match the chat_id in telegram with the creator_id for user verification
+	 * @pre - item(s) must be in asset_item_ids_listed_sale in asset table
+	 * @pre - item(s) must be listed before (in 'sales' TABLE)
+	 * 
+	 */
 	ACTION rmitemsale(
 				uint64_t sale_id, 
-				uint64_t item_id
+				uint64_t seller_id,
+				const vector<uint64_t> item_ids
 			);
 
 
-	ACTION setitmprsale(
+
+	ACTION setitmprisale(
 				uint64_t sale_id,
+				uint64_t seller_id,
 				const asset& listing_price_crypto,
 				float listing_price_fiat_usd
 			);
@@ -457,7 +479,8 @@ public:
 
 
 	// ============================================================================================================================
-	inline bool has_item_in_vector( const vector<uint64_t>& vec, uint64_t item) {
+	template <typename T>
+	inline bool has_item_in_vector( const vector<T>& vec, T item) {
 		bool found = false;
 		if (std::find(vec.begin(), vec.end(), item) !=  vec.end())
 			found = true;
