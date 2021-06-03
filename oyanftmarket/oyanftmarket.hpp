@@ -36,6 +36,7 @@ CONTRACT oyanftmarket : public contract
 {
 private:
 	const vector<symbol> crypto_token_symbol_list;
+	float platform_commission_rate;
 
 public:
 	using contract::contract;
@@ -46,7 +47,8 @@ public:
 														symbol("EOS", 4), 
 														symbol("TLOS", 4), 
 														symbol("WAX", 4)}
-										)
+										),
+				platform_commission_rate(0.01)
 				{}
 
 
@@ -282,6 +284,23 @@ public:
 			);
 
 	/**
+	 * @brief - Buyer buy a sale (with item(s))
+	 * @details: main objectives:
+	 * 			- transfer of price amount from buyer to seller, creator (as royalty fee)
+				- transfer of assets from seller to buyer
+				- update the info wherever needed like sale table, asset table, oyanocreator table cryptobal table
+	 * 
+	 * @param sale_id - sale id
+	 * @param buyer_id - buyer id
+	 * @param pay_mode - pay mode (fiat/crypto)
+	 */
+	ACTION buyitemsale(
+				uint64_t sale_id,
+				uint64_t buyer_id,
+				const name& pay_mode
+			);
+
+	/**
 	 * @brief - unlist a sale
 	 * @details - unlist a sale
 	 * 
@@ -338,16 +357,18 @@ public:
 
 
 
+private:
 	// -----------------------------------------------------------------------------------------------------------------------
-	// scope: <telegram_id>
-	TABLE balance
+	// scope: get_self()
+	TABLE cryptobal
 	{
+		uint64_t user_id;
         asset balance;
 
-        uint64_t primary_key()const { return balance.symbol.code().raw(); }
+        uint64_t primary_key()const { return user_id; }
 	};
 
-	using balance_index = multi_index<"balances"_n, balance>
+	using cryptobal_index = multi_index<"cryptobal"_n, cryptobal>
 
 	// -----------------------------------------------------------------------------------------------------------------------
 	// Table for non-creator with asset_id (with item_ids)
@@ -397,6 +418,7 @@ public:
 		checksum256 asset_file_hash;		// asset file hash (for mp3, mp4, good quality file)
 		vector<uint64_t> asset_item_ids_listed_sale;	// asset copies listed qty by owner (creator (only for 1st sale) or seller). only modifyable when there is a new sale or auction
 		vector<uint64_t> asset_item_ids_listed_auct;	// asset copies listed qty by owner (creator (only for 1st sale) or seller). only modifyable when there is a new sale or auction
+		vector<uint64_t> asset_item_ids_transferred;	// asset copies transferred from creator i.e. sold/gifted at least once
 		uint64_t asset_copies_qty_total;		// asset copies total qty (if burned an item, then qty is decreased here)
 		float asset_royaltyfee;			// asset royalty fee
 		string asset_artist;				// asset artist
@@ -508,6 +530,10 @@ public:
 
 		return saleauc_id;
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------------
+	void sub_balance( const name& owner, const asset& value );
+	void add_balance( const name& owner, const asset& value, const name& ram_payer );
 
 
 };
