@@ -36,6 +36,7 @@ CONTRACT oyanftmarket : public contract
 {
 private:
 	const vector<symbol> crypto_token_symbol_list;
+	const symbol cryptopay_token_symbol;
 	float platform_commission_rate;
 
 public:
@@ -48,7 +49,8 @@ public:
 														symbol("TLOS", 4), 
 														symbol("WAX", 4)}
 										),
-				platform_commission_rate(0.01)
+				cryptopay_token_symbol(symbol("EOS", 4))
+				latform_commission_rate(0.01)
 				{}
 
 
@@ -219,6 +221,7 @@ public:
 	 * @param seller_id - creator/non-creator id
 	 * @param collection_name - collection name
 	 * @param item_ids - item ids (list multiple items into the market)
+	 * @param price_mode - price mode (fiat/crypto)
 	 * @param listing_price_crypto - price in crypto
 	 * @param listing_price_fiat_usd - price in fiat (usd)
 	 * 
@@ -232,6 +235,7 @@ public:
 				const name& seller_id,
 				const name& collection_name,
 				const vector<uint64_t> item_ids,
+				const name& price_mode,
 				const asset& listing_price_crypto,
 				float listing_price_fiat,
 			);
@@ -275,10 +279,20 @@ public:
 			);
 
 
-
-	ACTION setitmprisale(
+	/**
+	 * @brief - Set price for a sale
+	 * @details - set price for sale in fiat or cypto
+	 * 
+	 * @param sale_id - sale id
+	 * @param seller_id - seller id
+	 * @param price_mode - price mode (fiat/crypto)
+	 * @param listing_price_crypto - listing price in crypto
+	 * @param listing_price_fiat_usd - listing price in USD
+	 */
+	ACTION setpricesale(
 				uint64_t sale_id,
 				uint64_t seller_id,
+				const name& price_mode,
 				const asset& listing_price_crypto,
 				float listing_price_fiat_usd
 			);
@@ -318,41 +332,143 @@ public:
 				uint64_t seller_id
 			);
 
+
 	/**
-	 * @brief - list item on auction
-	 * @details - list item on auction
+	 * @brief - platform delete the sale just after `buyitemsale` is executed successfully
+	 * @details - platform delete the sale just after `buyitemsale` is executed successfully
 	 * 
-	 * @param item_id - item id
+	 * @param sale_id - sale id
+	 */
+	ACTION delsale(
+				uint64_t sale_id
+			);
+
+
+	/**
+	 * @brief - list item_id(s) on sale
+	 * @details - list item_id(s) on sale
+	 * 
+	 * @param seller_id - creator/non-creator id
 	 * @param collection_name - collection name
-	 * @param seller_id - seller(creator/non-creator) id
-	 * @param current_bid_crypto - price in crypto
-	 * @param current_bid_usd - price in fiat (usd)
+	 * @param item_ids - item ids (merge multiple items into the market)
+	 * @param price_mode - price mode (fiat/crypto)
+	 * @param current_bid_crypto - bid price in crypto
+	 * @param current_bid_fiat_usd - bid price in fiat (usd)
 	 * 
 	 * @pre - match the chat_id in telegram with the creator_id for user verification
-	 * @pre - item must not be listed before (in 'sales' & 'auction' TABLE)
+	 * @pre - item(s) must not be listed before (in 'sales' TABLE)
+	 * @pre - item(s) must not be in asset_item_ids_listed_sale in asset table
+	 * @pre - items must be owned by the seller_id
+	 * 
 	 */
 	ACTION listitemauct(
-				uint64_t item_id,
-				const name& collection_name,
 				const name& seller_id,
+				const name& collection_name,
+				const vector<uint64_t> item_ids,
+				const name& price_mode,
 				const asset& current_bid_crypto,
 				float current_bid_fiat_usd,
 			);
 
+	/**
+	 * @brief - add item(s) to an existing auction
+	 * @details - add item(s) to an existing auction
+	 * 
+	 * @param auction_id - auction id
+	 * @param seller_id - creator/non-creator id
+	 * @param item_ids - item ids (merge multiple items into the market)
+	 * 
+	 * @pre - match the chat_id in telegram with the creator_id for user verification
+	 * @pre - item(s) must not be in asset_item_ids_listed_auct in asset table
+	 * @pre - item(s) must not be listed before (in 'auction' TABLE)
+	 * 
+	 */
+	ACTION additemauct(
+				uint64_t auction_id, 
+				uint64_t seller_id,
+				const vector<uint64_t> item_ids
+			);
+
+	/**
+	 * @brief - remove item(s) from an existing auction
+	 * @details - remove item(s) from an existing auction
+	 * 
+	 * @param auction_id - auction id
+	 * @param seller_id - creator/non-creator id
+	 * @param item_ids - item ids (list multiple items into the market)
+	 * 
+	 * @pre - match the chat_id in telegram with the creator_id for user verification
+	 * @pre - item(s) must be in asset_item_ids_listed_auct in asset table
+	 * @pre - item(s) must be listed before (in 'auction' TABLE)
+	 * 
+	 */
+	ACTION rmitemauct(
+				uint64_t auction_id, 
+				uint64_t seller_id,
+				const vector<uint64_t> item_ids
+			);
+
+
+	/**
+	 * @brief - Set price for a auction
+	 * @details - set price for auction in fiat or cypto
+	 * 
+	 * @param auction_id - auction id
+	 * @param seller_id - seller id
+	 * @param price_mode - price mode (fiat/crypto)
+	 * @param current_bid_crypto - bid in crypto
+	 * @param current_bid_fiat_usd - bid in fiat
+	 */
+	ACTION setpriceauct(
+				uint64_t auction_id,
+				uint64_t seller_id,
+				const name& price_mode,
+				const asset& current_bid_crypto,
+				float current_bid_fiat_usd
+			);
+
+	/**
+	 * @brief - Buyer buy a sale (with item(s))
+	 * @details: main objectives:
+	 * 			- transfer of price amount from buyer to seller, creator (as royalty fee)
+				- transfer of assets from seller to buyer
+				- update the info wherever needed like sale table, asset table, oyanocreator table cryptobal table
+	 * 
+	 * @param auction_id - auction id
+	 * @param buyer_id - buyer id
+	 * @param pay_mode - pay mode (fiat/crypto)
+	 */
+	ACTION buyitemauct(
+				uint64_t auction_id,
+				uint64_t buyer_id,
+				const name& pay_mode
+			);
 
 	/**
 	 * @brief - unlist item on auction
 	 * @details - unlist item on auction
 	 * 
 	 * @param item_id - item id
-	 * @param seller_id - seller(creator/owner) id
+	 * @param seller_id - seller(creator/non-creator) id. Seller is the current owner
 	 * 
 	 * @pre - match the chat_id in telegram with the creator_id for user verification
-	 * @pre - item must not be listed before in 'auction' TABLE
+	 * @pre - checked the seller is original
+	 * 
+	 * @post - remove the item_id(s) also from `asset_item_ids_listed_auct` in asset table
 	 */
 	ACTION ulistitmauct(
 				uint64_t auction_id,
 				uint64_t seller_id
+			);
+
+	/**
+	 * @brief - platform delete the auction just after `buyitemauct` is executed successfully
+	 * @details - platform delete the auction just after `buyitemauct` is executed successfully
+	 * 
+	 * @param auction_id - auction id
+	 */
+	ACTION delauct(
+				uint64_t sale_id
 			);
 
 
