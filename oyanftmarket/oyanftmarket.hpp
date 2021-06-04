@@ -5,7 +5,8 @@
 // #include <eosio/crypto.hpp>
 #include <string>
 #include <vector>
-#include <cstdlib>
+#include <map>
+#include <cstdlib>		// for strtoull
 #include <algorithm>
 
 
@@ -31,6 +32,7 @@ using eosio::checksum256;
 
 using std::string;
 using std::vector;
+using std::map;
 
 CONTRACT oyanftmarket : public contract
 {
@@ -308,7 +310,7 @@ public:
 	 * @param buyer_id - buyer id
 	 * @param pay_mode - pay mode (fiat/crypto)
 	 */
-	ACTION buyitemsale(
+	ACTION buysale(
 				uint64_t sale_id,
 				uint64_t buyer_id,
 				const name& pay_mode
@@ -351,6 +353,7 @@ public:
 	 * @param seller_id - creator/non-creator id
 	 * @param collection_name - collection name
 	 * @param item_ids - item ids (merge multiple items into the market)
+	 * @param end_time - auction end time
 	 * @param price_mode - price mode (fiat/crypto)
 	 * @param current_bid_crypto - bid price in crypto
 	 * @param current_bid_fiat_usd - bid price in fiat (usd)
@@ -365,6 +368,7 @@ public:
 				const name& seller_id,
 				const name& collection_name,
 				const vector<uint64_t> item_ids,
+				uint32_t end_time,
 				const name& price_mode,
 				const asset& current_bid_crypto,
 				float current_bid_fiat_usd,
@@ -428,7 +432,7 @@ public:
 			);
 
 	/**
-	 * @brief - Buyer buy a sale (with item(s))
+	 * @brief - Bidder confirm a auction (with item(s))
 	 * @details: main objectives:
 	 * 			- transfer of price amount from buyer to seller, creator (as royalty fee)
 				- transfer of assets from seller to buyer
@@ -438,7 +442,7 @@ public:
 	 * @param buyer_id - buyer id
 	 * @param pay_mode - pay mode (fiat/crypto)
 	 */
-	ACTION buyitemauct(
+	ACTION bconfirmauct(
 				uint64_t auction_id,
 				uint64_t buyer_id,
 				const name& pay_mode
@@ -590,13 +594,14 @@ private:
 		vector<uint64_t> item_ids;			// list of item_id format is "<item_id>99999" E.g. if max_copies = 100, then "<asset_id>1" is the 1st item_id. If max_copies = 1, then item_id is "<asset_id>1"
 		uint64_t asset_id;			// asset id
 		uint64_t seller_id;				// seller telegram_id
-		uint64_t start_time;		// auction start time
-		uint64_t end_time;			// auction end time
+		uint32_t start_time;		// auction start time
+		uint32_t end_time;			// auction end time
 		asset current_bid_crypto;			// current bid of asset in crypto (if opted for crypto)
 		float current_bid_fiat_usd;			// current bid of asset in fiat in USD (if opted for fiat)
-		uint64_t current_bidder_id;		// current bidder telegram_id
+		map<uint64_t, bool> bidder_ids_claimedbybuyer;		// current bidder telegram_id
 		bool claimed_by_seller;		// claimed by seller
-		bool claimed_by_buyer;		// claimed by buyer
+		uint64_t confirmed_bidder_id_by_seller;		// seller confirmed bidder id
+		// bool claimed_by_buyer;	// claimed by buyer
 		name collection_name;		// collection name
 		float royalty_fee;		// collection/royalty fee
 
@@ -648,8 +653,40 @@ private:
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------------
-	void sub_balance( const name& owner, const asset& value );
-	void add_balance( const name& owner, const asset& value, const name& ram_payer );
+	void sub_balance( uint64_t owner_id, const asset& qty ) {
+		cryptobal_index from_cryptobal_table(get_self(), get_self().value);
+		auto from_cryptobal_it = from_cryptobal_table.find(owner_id);
+
+		check(from_cryptobal_it != from_cryptobal_table.end(), "user not found in cryptobal table.")
+		check(from_cryptobal_it->balance.symbol.raw() == qty.symbol.raw(), "no crypto balance object found for buyer");
+		check( from_cryptobal_it->balance.amount >= qty.amount, "overdrawn crypto balance" );
+
+		from_cryptobal_table.modify( from_cryptobal_it, get_self(), [&]( auto& row ) {
+			 row.balance -= qty;
+		});
+	}
+
+
+	// -----------------------------------------------------------------------------------------------------------------------
+	void add_balance( uint64_t owner_id, const asset& qty, const name& ram_payer )
+	{
+		cryptobal_index to_cryptobal_table(get_self(), get_self().value);
+		auto to_cryptobal_it = to_cryptobal_table.find(owner_id);
+
+		if( to_cryptobal_it == to_cryptobal_table.end() ) {
+		  to_cryptobal_table.emplace( ram_payer, [&]( auto& row ){
+		  	row.user_id = owner_id;
+			row.balance = qty;
+		  });
+		} else {
+			check(from_cryptobal_it->balance.symbol.raw() == qty.symbol.raw(), "no crypto balance object found for seller");
+			
+			to_cryptobal_table.modify( to_cryptobal_it, same_payer, [&]( auto& row ) {
+			row.balance += qty;
+			});
+		}
+	}
+	// -----------------------------------------------------------------------------------------------------------------------
 
 
 };

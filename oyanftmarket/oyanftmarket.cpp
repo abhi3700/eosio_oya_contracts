@@ -535,7 +535,7 @@ void oyanftmarket::setpricesale(
 }
 
 // --------------------------------------------------------------------------------------------------------------------
-void oyanftmarket::buyitemsale(
+void oyanftmarket::buysale(
 				uint64_t sale_id,
 				uint64_t buyer_id,
 				const name& pay_mode
@@ -677,42 +677,6 @@ void oyanftmarket::buyitemsale(
 
 }
 
-// --------------------------------------------------------------------------------------------------------------------
-void oyanftmarket::sub_balance( uint64_t owner_id, const asset& qty ) {
-	cryptobal_index from_cryptobal_table(get_self(), get_self().value);
-	auto from_cryptobal_it = from_cryptobal_table.find(owner_id);
-
-	check(from_cryptobal_it != from_cryptobal_table.end(), "user not found in cryptobal table.")
-	// const auto& from_cryptobal_it = from_cryptobal_table.get( qty.symbol.raw(), "no crypto balance object found" );
-	check(from_cryptobal_it->balance.symbol.raw() == qty.symbol.raw(), "no crypto balance object found for buyer");
-	check( from_cryptobal_it->balance.amount >= qty.amount, "overdrawn crypto balance" );
-
-	from_cryptobal_table.modify( from_cryptobal_it, get_self(), [&]( auto& row ) {
-		 row.balance -= qty;
-	});
-}
-
-// --------------------------------------------------------------------------------------------------------------------
-void oyanftmarket::add_balance( uint64_t owner_id, const asset& qty, const name& ram_payer )
-{
-	cryptobal_index to_cryptobal_table(get_self(), get_self().value);
-	auto to_cryptobal_it = to_cryptobal_table.find(owner_id);
-	// auto to_cryptobal_it = to_cryptobal_table.find(qty.symbol.raw());
-    // auto to = to_acnts.find( value.symbol.code().raw() );
-	
-	if( to_cryptobal_it == to_cryptobal_table.end() ) {
-	  to_cryptobal_table.emplace( ram_payer, [&]( auto& row ){
-	  	row.user_id = owner_id;
-		row.balance = qty;
-	  });
-	} else {
-		check(from_cryptobal_it->balance.symbol.raw() == qty.symbol.raw(), "no crypto balance object found for seller");
-		
-		to_cryptobal_table.modify( to_cryptobal_it, same_payer, [&]( auto& row ) {
-		row.balance += qty;
-		});
-	}
-}
 
 // --------------------------------------------------------------------------------------------------------------------
 void oyanftmarket::ulistitemsale(
@@ -783,6 +747,7 @@ void oyanftmarket::listitemauct(
 				const name& seller_id,
 				const name& collection_name,
 				const vector<uint64_t> item_ids,
+				uint32_t end_time,
 				const name& price_mode,
 				const asset& current_bid_crypto,
 				float current_bid_fiat_usd,
@@ -811,6 +776,9 @@ void oyanftmarket::listitemauct(
 		check(!has_item_in_vector(asset_it->asset_item_ids_listed_auct, item_id), 
 			"the item id: \'".append(item_id).append("\' is already listed on auction in asset table"));
 	}
+
+	// check end_time can't be now()
+	check(end_time != now(), "end_time can\'t be set as current time");
 
 	check( current_bid_crypto.is_valid(), "invalid price in crypto");
 	check( current_bid_crypto.amount > 0, "crypto qty must be positive");
@@ -848,7 +816,7 @@ void oyanftmarket::listitemauct(
 		row.asset_id = asset_id;
 		row.seller_id = seller_id;
 		row.start_time = now();
-		row.end_time = 0;
+		row.end_time = end_time;
 		if(price_mode == "crypto"_n) {
 			row.current_bid_crypto = current_bid_crypto;
 			row.current_bid_fiat_usd = 0;
@@ -896,7 +864,7 @@ void oyanftmarket::additemauct(
 
 	check(asset_it != asset_table.end(), "there is no such asset id for the auction\'s collection name");
 
-	check( (asset_it->asset_copies_qty_total - asset_it->asset_item_ids_listed_auct.size() - asset_it->asset_item_ids_listed_auct.size()) >= item_ids.size(), 
+	check( (asset_it->asset_copies_qty_total - asset_it->asset_item_ids_listed_sale.size() - asset_it->asset_item_ids_listed_auct.size()) >= item_ids.size(), 
 		"the no. of items remaining for listed is less than the parsed items size." ):
 
 	// check item_ids must not be in listed auction in auction table
@@ -932,247 +900,265 @@ void oyanftmarket::additemauct(
 }
 
 // --------------------------------------------------------------------------------------------------------------------
-// void oyanftmarket::rmitemauct(
-// 				uint64_t sale_id, 
-// 				uint64_t seller_id,
-// 				const vector<uint64_t> item_ids
-// 			)
-// {
-// 	require_auth(get_self());
+void oyanftmarket::rmitemauct(
+				uint64_t auction_id, 
+				uint64_t seller_id,
+				const vector<uint64_t> item_ids
+			)
+{
+	require_auth(get_self());
 
-// 	sale_index sale_table(get_self(), get_self().value);
-// 	auto sale_it = sale_table.find(sale_id);
+	auction_index auction_table(get_self(), get_self().value);
+	auto auction_it = auction_table.find(auction_id);
 
-// 	check(sale_it != sale_table.end(), "the sale id doesn\'t exist.");
+	check(auction_it != auction_table.end(), "the auction id doesn\'t exist.");
 
-// 	// checked the seller is original
-// 	check(sale_it->seller_id == seller_id, "the parsed seller_id doesn\'t match with the actual one for this sale.");
+	// checked the seller is original
+	check(auction_it->seller_id == seller_id, "the parsed seller_id doesn\'t match with the actual one for this auction.");
 
-// 	asset_index asset_table(get_self(), sale_it->collection_name.value);
-// 	auto asset_it = asset_table.find(sale_it->asset_id);
+	asset_index asset_table(get_self(), auction_it->collection_name.value);
+	auto asset_it = asset_table.find(auction_it->asset_id);
 
-// 	check(asset_it != asset_table.end(), "there is no such asset id for the sale\'s collection name");
+	check(asset_it != asset_table.end(), "there is no such asset id for the auction\'s collection name");
 
-// 	check( (asset_it->asset_copies_qty_total - asset_it->asset_item_ids_listed_sale.size() - asset_it->asset_item_ids_listed_auct.size()) >= item_ids.size(), 
-// 		"the no. of items remaining for listed is less than the parsed list size." ):
+	check( (asset_it->asset_copies_qty_total - asset_it->asset_item_ids_listed_sale.size() - asset_it->asset_item_ids_listed_auct.size()) >= item_ids.size(), 
+		"the no. of items remaining for listed is less than the parsed list size." ):
 
-// 	// check item_ids must be in listed sale in sale table
-// 	for(auto&& item_id : item_ids) {
-// 		check(has_item_in_vector(sale_it->item_ids, item_id), 
-// 			"the item id: \'".append(item_id).append("\' is not listed on sale in sale table"));
-// 	}
+	// check item_ids must be in listed auction in auction table
+	for(auto&& item_id : item_ids) {
+		check(has_item_in_vector(auction_it->item_ids, item_id), 
+			"the item id: \'".append(item_id).append("\' is not listed on auction in auction table"));
+	}
 
-// 	// check item_ids must be in listed sale in 
-// 	for(auto&& item_id : item_ids) {
-// 		check(has_item_in_vector(asset_it->asset_item_ids_listed_sale, item_id), 
-// 			"the item id: \'".append(item_id).append("\' is not listed on sale in asset table"));
-// 	}
-
-
-// 	// remove the item_id(s) also from asset_item_ids_listed_sale in asset table
-// 	for(auto&& item_id : item_ids) {
-// 		auto item_id_ast_it = std::find(asset_it->asset_item_ids_listed_sale.begin(), asset_it->asset_item_ids_listed_sale.end(), item_id);
-// 		if(item_id_ast_it != asset_it->asset_item_ids_listed_sale.end()) {		// if item_id found
-// 			asset_table.modify(asset_it, get_self(), [&](auto &row){
-// 				row.asset_item_ids_listed_sale.erase(item_id_ast_it);
-// 			});
-// 		}	
-// 	}
-
-// 	// remove item_ids from the sale table
-// 	for(auto&& item_id : item_ids) {
-// 		auto item_id_sale_it = std::find(sale_it->item_ids.begin(), sale_it->item_ids.end(), item_id);
-// 		if(item_id_sale_it != sale_it->item_ids.end()) {		// if item_id found
-// 			sale_table.modify(sale_it, get_self(), [&](auto &row){
-// 				row.item_ids.erase(item_id_sale_it);
-// 			});
-// 		}	
-// 	}
-
-// }
+	// check item_ids must be in listed auction in 
+	for(auto&& item_id : item_ids) {
+		check(has_item_in_vector(asset_it->asset_item_ids_listed_auct, item_id), 
+			"the item id: \'".append(item_id).append("\' is not listed on auction in asset table"));
+	}
 
 
-// // --------------------------------------------------------------------------------------------------------------------
-// void oyanftmarket::setpriceauct(
-// 				uint64_t sale_id,
-// 				uint64_t seller_id,
-// 				const name& price_mode,
-// 				const asset& listing_price_crypto,
-// 				float listing_price_fiat_usd
-// 			)
-// {
-// 	require_auth(get_self());
+	// remove the item_id(s) also from asset_item_ids_listed_auct in asset table
+	for(auto&& item_id : item_ids) {
+		auto item_id_ast_it = std::find(asset_it->asset_item_ids_listed_auct.begin(), asset_it->asset_item_ids_listed_auct.end(), item_id);
+		if(item_id_ast_it != asset_it->asset_item_ids_listed_auct.end()) {		// if item_id found
+			asset_table.modify(asset_it, get_self(), [&](auto &row){
+				row.asset_item_ids_listed_auct.erase(item_id_ast_it);
+			});
+		}	
+	}
 
-// 	sale_index sale_table(get_self(), get_self().value);
-// 	auto sale_it = sale_table.find(sale_id);
+	// remove item_ids from the auction table
+	for(auto&& item_id : item_ids) {
+		auto item_id_sale_it = std::find(auction_it->item_ids.begin(), auction_it->item_ids.end(), item_id);
+		if(item_id_sale_it != auction_it->item_ids.end()) {		// if item_id found
+			auction_table.modify(auction_it, get_self(), [&](auto &row){
+				row.item_ids.erase(item_id_sale_it);
+			});
+		}	
+	}
 
-// 	check(sale_it != sale_table.end(), "the sale id doesn\'t exist.");
-
-// 	// checked the seller is original
-// 	check(sale_it->seller_id == seller_id, "the parsed seller_id doesn\'t match with the actual one for this sale.");
-
-// 	check( (price_mode == "crypto"_n) || (price_mode == "fiat"_n), "invalid price mode.");
-
-// 	if (price_mode == "crypto"_n) {
-// 		check( listing_price_crypto.amount > 0, "the listing price amount in crypto must be positive.");
-
-// 		check(has_item_in_vector(crypto_token_symbol_list, listing_price_crypto.symbol), "Only chosen tokens are accepted as crypto for trading asset.");
-
-// 		sale_table.modify(sale_it, get_self(), [&](auto &row){;
-// 			row.listing_price_crypto = listing_price_crypto;
-// 		});
-
-// 	} else if (price_mode == "fiat"_n)  {
-// 		check(listing_price_fiat_usd > 0.0, "the listing price amount in USD amount must be positive.")
-
-// 		sale_table.modify(sale_it, get_self(), [&](auto &row){;
-// 			row.listing_price_fiat_usd = listing_price_fiat_usd;
-// 		});
-// 	}
-// }
-
-// // --------------------------------------------------------------------------------------------------------------------
-// void oyanftmarket::buyitemauct(
-// 				uint64_t sale_id,
-// 				uint64_t buyer_id,
-// 				const name& pay_mode
-// 			)
-// {
-// 	require_auth(get_self());
-
-// 	sale_index sale_table(get_self(), get_self().value);
-// 	auto sale_it = sale_table.find(sale_id);
-
-// 	check(sale_it != sale_table.end(), "the sale id doesn\'t exist.");
-
-// 	// instantiate the asset table
-// 	asset_index asset_table(get_self(), sale_it->collection_name.value);
-// 	auto asset_it = asset_table.find(sale_it->asset_id);
-
-// 	check(asset_it != asset_table.end(), "there is no such asset id for the sale\'s collection name");
-
-// 	check( (pay_mode == "crypto"_n) || (pay_mode == "fiat"_n), "invalid price mode.");
-
-// 	// ************************************
-// 	// Payment (crypto)
-// 	if (pay_mode == "crypto"_n) {
-// 		// create asset for seller
-// 		auto qty_seller = asset(0, sale_it->listing_price_crypto.symbol);
-// 		qty_seller.amount = sale_it->listing_price_crypto.amount * (1 - sale_it->royalty_fee - platform_commission_rate); 
-
-// 		// create asset for creator
-// 		auto qty_creator = asset(0, sale_it->listing_price_crypto.symbol);
-// 		qty_creator.amount = sale_it->listing_price_crypto.amount * sale_it->royalty_fee; 
-
-// 		sub_balance(buyer_id, sale_it->listing_price_crypto);			// from buyer
-// 		add_balance(sale_it->seller_id, qty_seller, get_self());		// to seller
-// 		add_balance(asset_it->creator_id, qty_creator, get_self());		// to creator as royalty_fee
-
-// 	}
-
-// 	// ************************************
-// 	// Seller
-// 	bool seller_is_creator = false;
-// 	// check if seller is an creator or not from asset table corresponding to asset_id
-// 	if(asset_it->creator_id == sale_it->seller_id) seller_is_creator = true;
-
-// 	if(!seller_is_creator) {
-// 		oyanocreator_index oyanocreator_seller_table(get_self(), sale_it->seller_id);
-// 		oyanocreator_seller_it = oyanocreator_seller_table.find(sale_it->asset_id);
-
-// 		check(oyanocreator_seller_it != oyanocreator_seller_table.end(), "the asset containing this item doesn\'t exist for this non-creator seller.");
-
-// 		for(auto&& item_id : sale_it->item_ids) {
-// 			// check the items exist in `item_ids` in oyanocreator table
-// 			check(has_item_in_vector(oyanocreator_seller_it->item_ids, item_id), 
-// 				"the item id: \'".append(item_id).append("\' is not owned by the seller in oyanocreator table."));
-
-// 			// remove the items from `item_ids` in oyanocreator table
-// 			auto item_id_it = std::find(oyanocreator_seller_it->item_ids.begin(), oyanocreator_seller_it->item_ids.end(), item_id);
-// 			if(item_id_it != oyanocreator_seller_it->item_ids.end()) {		// if item_id found
-// 				oyanocreator_seller_table.modify(oyanocreator_seller_it, get_self(), [&](auto &row){
-// 					row.item_ids.erase(item_id_it);
-// 				});
-// 			}	
-// 		}
-
-// 	} else {
-// 		// check that the items does not exist into `asset_item_ids_transferred` in asset table
-// 		for(auto&& item_id : sale_it->item_ids) {
-// 			check(!has_item_in_vector(asset_it->asset_item_ids_transferred, item_id), "the item id: \'".append(item_id).append("\' already exist as transferred item in asset table"));
-// 		}
-
-// 		// add the items into `asset_item_ids_transferred` in asset table
-// 		asset_table.modify(asset_it, get_self(), [&](auto &row){
-// 			row.asset_item_ids_transferred.insert(asset_it->asset_item_ids_transferred.end(),sale_it->item_ids.begin(), sale_it->item_ids.end());
-// 		});
-
-// 	}
-
-// 	for (auto&& item_id : sale_it->item_ids) {
-// 		// check the item_ids in sale table exist in `asset_item_ids_listed_sale` in asset table
-// 		check(has_item_in_vector(asset_it->asset_item_ids_listed_sale, item_id), 
-// 			"the item id: \'".append(item_id).append("\' is not listed on sale in asset table"));
-
-// 		// remove items from the `asset_item_ids_listed_sale` in asset table
-// 		auto item_id_it = std::find(asset_it->asset_item_ids_listed_sale.begin(), asset_it->asset_item_ids_listed_sale.end(), item_id);
-// 		if(item_id_it != asset_it->asset_item_ids_listed_sale.end()) {		// if item_id found
-// 			asset_table.modify(asset_it, get_self(), [&](auto &row){
-// 				row.asset_item_ids_listed_sale.erase(item_id_it);
-// 			});
-// 		}
-
-// 	}
+}
 
 
-// 	// ************************************
-// 	// Buyer
-// 	// NOTE: The buyer could be creator (where, try to buy the item_id back) or non-creator
-// 	bool buyer_is_creator = false;
-// 	// check if buyer is an creator or not from asset table corresponding to asset_id
-// 	if(asset_it->creator_id == buyer_id) buyer_is_creator = true;
+// --------------------------------------------------------------------------------------------------------------------
+void oyanftmarket::setpriceauct(
+				uint64_t auction_id,
+				uint64_t seller_id,
+				const name& price_mode,
+				const asset& current_bid_crypto,
+				float current_bid_fiat_usd
+			)
+{
+	require_auth(get_self());
 
-// 	if(!buyer_is_creator) {
-// 		oyanocreator_index oyanocreator_buyer_table(get_self(), buyer_id);
-// 		oyanocreator_buyer_it = oyanocreator_buyer_table.find(sale_it->asset_id);
+	auction_index auction_table(get_self(), get_self().value);
+	auto auction_it = auction_table.find(auction_id);
 
-// 		check(oyanocreator_buyer_it != oyanocreator_buyer_table.end(), "the asset containing this item doesn\'t exist for this non-creator buyer.");
+	check(auction_it != auction_table.end(), "the auction id doesn\'t exist.");
 
-// 		for(auto&& item_id : sale_it->item_ids) {
-// 			// check that the buyer doesn't already own these items in oyanocreator table
-// 			check(!has_item_in_vector(oyanocreator->item_ids, item_id), "the item id: \'".append(item_id).append("\' already owned by the buyer in oyanocreator table"));
-// 		}
+	// checked the seller is original
+	check(auction_it->seller_id == seller_id, "the parsed seller_id doesn\'t match with the actual one for this auction.");
 
-// 		// add the items into `item_ids` in oyanocreator table
-// 		oyanocreator_buyer_table.modify(oyanocreator_buyer_it, get_self(), [&](auto &row){
-// 			row.item_ids.insert(oyanocreator_buyer_it->item_ids.end(), sale_it->item_ids.begin(), sale_it->item_ids.end());
-// 		});
+	check( (price_mode == "crypto"_n) || (price_mode == "fiat"_n), "invalid price mode.");
 
-// 	} else {
-// 		for (auto&& item_id : sale_it->item_ids) {
-// 			// check the item_ids exist in `asset_item_ids_transferred` in asset table
-// 			check(has_item_in_vector(asset_id->asset_item_ids_transferred, item_id), "the item id: \'".append(item_id).append("\' doesn\'t exist as transferred item in asset table."));
+	if (price_mode == "crypto"_n) {
+		check( current_bid_crypto.amount > 0, "the listing price amount in crypto must be positive.");
+
+		check(has_item_in_vector(crypto_token_symbol_list, current_bid_crypto.symbol), "Only chosen tokens are accepted as crypto for trading asset.");
+
+		auction_table.modify(auction_it, get_self(), [&](auto &row){;
+			row.current_bid_crypto = current_bid_crypto;
+		});
+
+	} else if (price_mode == "fiat"_n)  {
+		check(current_bid_fiat_usd > 0.0, "the listing price amount in USD amount must be positive.")
+
+		auction_table.modify(auction_it, get_self(), [&](auto &row){;
+			row.current_bid_fiat_usd = current_bid_fiat_usd;
+		});
+	}
+}
+
+
+// --------------------------------------------------------------------------------------------------------------------
+void oyanftmarket::bidauct(
+				uint64_t auction_id,
+				uint64_t bidder_id,
+				float current_bid_fiat_usd
+			)
+{
+
+}
+// --------------------------------------------------------------------------------------------------------------------
+void oyanftmarket::sconfirmauct(
+				uint64_t auction_id,
+				uint64_t bidder_id,
+			)
+{
 	
-// 			// restore by removing the items from `asset_item_ids_transferred` in asset table
-// 			auto item_id_it = std::find(asset_it->asset_item_ids_transferred.begin(), asset_it->asset_item_ids_transferred.end(), item_id);
-// 			if(item_id_it != asset_it->asset_item_ids_transferred.end()) {		// if item_id found
-// 				asset_table.modify(asset_it, get_self(), [&](auto &row){
-// 					row.asset_item_ids_transferred.erase(item_id_it);
-// 				});
-// 			}
+}
+// --------------------------------------------------------------------------------------------------------------------
+void oyanftmarket::bconfirmauct(
+				uint64_t auction_id,
+				uint64_t bidder_id,
+				const name& pay_mode
+			)
+{
+	require_auth(get_self());
 
-// 		}
+	auction_index auction_table(get_self(), get_self().value);
+	auto auction_it = auction_table.find(auction_id);
+
+	check(auction_it != auction_table.end(), "the auction id doesn\'t exist.");
+
+	// instantiate the asset table
+	asset_index asset_table(get_self(), auction_it->collection_name.value);
+	auto asset_it = asset_table.find(auction_it->asset_id);
+
+	check(asset_it != asset_table.end(), "there is no such asset id for the auction\'s collection name");
+
+	check( (pay_mode == "crypto"_n) || (pay_mode == "fiat"_n), "invalid price mode.");
+
+	// ************************************
+	// Payment (crypto)
+	if (pay_mode == "crypto"_n) {
+		// create asset for seller
+		auto qty_seller = asset(0, auction_it->current_bid_crypto.symbol);
+		qty_seller.amount = auction_it->current_bid_crypto.amount * (1 - auction_it->royalty_fee - platform_commission_rate); 
+
+		// create asset for creator
+		auto qty_creator = asset(0, auction_it->current_bid_crypto.symbol);
+		qty_creator.amount = auction_it->current_bid_crypto.amount * auction_it->royalty_fee; 
+
+		sub_balance(buyer_id, auction_it->current_bid_crypto);			// from buyer
+		add_balance(auction_it->seller_id, qty_seller, get_self());		// to seller
+		add_balance(asset_it->creator_id, qty_creator, get_self());		// to creator as royalty_fee
+
+	}
+
+	// ************************************
+	// Seller
+	bool seller_is_creator = false;
+	// check if seller is an creator or not from asset table corresponding to asset_id
+	if(asset_it->creator_id == auction_it->seller_id) seller_is_creator = true;
+
+	if(!seller_is_creator) {
+		oyanocreator_index oyanocreator_seller_table(get_self(), auction_it->seller_id);
+		oyanocreator_seller_it = oyanocreator_seller_table.find(auction_it->asset_id);
+
+		check(oyanocreator_seller_it != oyanocreator_seller_table.end(), "the asset containing this item doesn\'t exist for this non-creator seller.");
+
+		for(auto&& item_id : auction_it->item_ids) {
+			// check the items exist in `item_ids` in oyanocreator table
+			check(has_item_in_vector(oyanocreator_seller_it->item_ids, item_id), 
+				"the item id: \'".append(item_id).append("\' is not owned by the seller in oyanocreator table."));
+
+			// remove the items from `item_ids` in oyanocreator table
+			auto item_id_it = std::find(oyanocreator_seller_it->item_ids.begin(), oyanocreator_seller_it->item_ids.end(), item_id);
+			if(item_id_it != oyanocreator_seller_it->item_ids.end()) {		// if item_id found
+				oyanocreator_seller_table.modify(oyanocreator_seller_it, get_self(), [&](auto &row){
+					row.item_ids.erase(item_id_it);
+				});
+			}	
+		}
+
+	} else {
+		// check that the items does not exist into `asset_item_ids_transferred` in asset table
+		for(auto&& item_id : auction_it->item_ids) {
+			check(!has_item_in_vector(asset_it->asset_item_ids_transferred, item_id), "the item id: \'".append(item_id).append("\' already exist as transferred item in asset table"));
+		}
+
+		// add the items into `asset_item_ids_transferred` in asset table
+		asset_table.modify(asset_it, get_self(), [&](auto &row){
+			row.asset_item_ids_transferred.insert(asset_it->asset_item_ids_transferred.end(),auction_it->item_ids.begin(), auction_it->item_ids.end());
+		});
+
+	}
+
+	for (auto&& item_id : auction_it->item_ids) {
+		// check the item_ids in auction table exist in `asset_item_ids_listed_auct` in asset table
+		check(has_item_in_vector(asset_it->asset_item_ids_listed_auct, item_id), 
+			"the item id: \'".append(item_id).append("\' is not listed on auction in asset table"));
+
+		// remove items from the `asset_item_ids_listed_auct` in asset table
+		auto item_id_it = std::find(asset_it->asset_item_ids_listed_auct.begin(), asset_it->asset_item_ids_listed_sale.end(), item_id);
+		if(item_id_it != asset_it->asset_item_ids_listed_auct.end()) {		// if item_id found
+			asset_table.modify(asset_it, get_self(), [&](auto &row){
+				row.asset_item_ids_listed_auct.erase(item_id_it);
+			});
+		}
+
+	}
 
 
-// 	}
+	// ************************************
+	// Buyer
+	// NOTE: The buyer could be creator (where, try to buy the item_id back) or non-creator
+	bool buyer_is_creator = false;
+	// check if buyer is an creator or not from asset table corresponding to asset_id
+	if(asset_it->creator_id == buyer_id) buyer_is_creator = true;
 
-// 	// ************************************
-// 	// add buyer in sale table
-// 	sale_table.modify(sale_it, get_self(), [&](auto &row){;
-// 		row.buyer_id = buyer_id;
-// 	});
+	if(!buyer_is_creator) {
+		oyanocreator_index oyanocreator_buyer_table(get_self(), buyer_id);
+		oyanocreator_buyer_it = oyanocreator_buyer_table.find(auction_it->asset_id);
 
-// }
+		check(oyanocreator_buyer_it != oyanocreator_buyer_table.end(), "the asset containing this item doesn\'t exist for this non-creator buyer.");
+
+		for(auto&& item_id : auction_it->item_ids) {
+			// check that the buyer doesn't already own these items in oyanocreator table
+			check(!has_item_in_vector(oyanocreator->item_ids, item_id), "the item id: \'".append(item_id).append("\' already owned by the buyer in oyanocreator table"));
+		}
+
+		// add the items into `item_ids` in oyanocreator table
+		oyanocreator_buyer_table.modify(oyanocreator_buyer_it, get_self(), [&](auto &row){
+			row.item_ids.insert(oyanocreator_buyer_it->item_ids.end(), auction_it->item_ids.begin(), auction_it->item_ids.end());
+		});
+
+	} else {
+		for (auto&& item_id : auction_it->item_ids) {
+			// check the item_ids exist in `asset_item_ids_transferred` in asset table
+			check(has_item_in_vector(asset_id->asset_item_ids_transferred, item_id), "the item id: \'".append(item_id).append("\' doesn\'t exist as transferred item in asset table."));
+	
+			// restore by removing the items from `asset_item_ids_transferred` in asset table
+			auto item_id_it = std::find(asset_it->asset_item_ids_transferred.begin(), asset_it->asset_item_ids_transferred.end(), item_id);
+			if(item_id_it != asset_it->asset_item_ids_transferred.end()) {		// if item_id found
+				asset_table.modify(asset_it, get_self(), [&](auto &row){
+					row.asset_item_ids_transferred.erase(item_id_it);
+				});
+			}
+
+		}
+
+
+	}
+
+	// ************************************
+	// add buyer in auction table
+	auction_table.modify(auction_it, get_self(), [&](auto &row){;
+		row.buyer_id = buyer_id;
+	});
+
+}
 
 // // --------------------------------------------------------------------------------------------------------------------
 // void oyanftmarket::ulistitemauct(
