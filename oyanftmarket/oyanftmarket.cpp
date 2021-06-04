@@ -875,63 +875,63 @@ void oyanftmarket::listitemauct(
 }
 
 // --------------------------------------------------------------------------------------------------------------------
-// void oyanftmarket::additemauct(
-// 				uint64_t sale_id, 
-// 				uint64_t seller_id,
-// 				const vector<uint64_t> item_ids
-// 			)
-// {
-// 	require_auth(get_self());
+void oyanftmarket::additemauct(
+				uint64_t auction_id, 
+				uint64_t seller_id,
+				const vector<uint64_t> item_ids
+			)
+{
+	require_auth(get_self());
 
-// 	sale_index sale_table(get_self(), get_self().value);
-// 	auto sale_it = sale_table.find(sale_id);
+	auction_index auction_table(get_self(), get_self().value);
+	auto auction_it = auction_table.find(auction_id);
 
-// 	check(sale_it != sale_table.end(), "the sale id doesn\'t exist.");
+	check(auction_it != auction_table.end(), "the auction id doesn\'t exist.");
 
-// 	// checked the seller is original
-// 	check(sale_it->seller_id == seller_id, "the parsed seller_id doesn\'t match with the actual one for this sale.");
+	// checked the seller is original
+	check(auction_it->seller_id == seller_id, "the parsed seller_id doesn\'t match with the actual one for this auction.");
 
-// 	asset_index asset_table(get_self(), sale_it->collection_name.value);
-// 	auto asset_it = asset_table.find(sale_it->asset_id);
+	asset_index asset_table(get_self(), auction_it->collection_name.value);
+	auto asset_it = asset_table.find(auction_it->asset_id);
 
-// 	check(asset_it != asset_table.end(), "there is no such asset id for the sale\'s collection name");
+	check(asset_it != asset_table.end(), "there is no such asset id for the auction\'s collection name");
 
-// 	check( (asset_it->asset_copies_qty_total - asset_it->asset_item_ids_listed_sale.size() - asset_it->asset_item_ids_listed_auct.size()) >= item_ids.size(), 
-// 		"the no. of items remaining for listed is less than the parsed list size." ):
+	check( (asset_it->asset_copies_qty_total - asset_it->asset_item_ids_listed_auct.size() - asset_it->asset_item_ids_listed_auct.size()) >= item_ids.size(), 
+		"the no. of items remaining for listed is less than the parsed items size." ):
 
-// 	// check item_ids must not be in listed sale in sale table
-// 	for(auto&& item_id : item_ids) {
-// 		check(!has_item_in_vector(sale_it->item_ids, item_id), 
-// 			"the item id: \'".append(item_id).append("\' is already listed on sale in sale table."));
-// 	}
+	// check item_ids must not be in listed auction in auction table
+	for(auto&& item_id : item_ids) {
+		check(!has_item_in_vector(auction_it->item_ids, item_id), 
+			"the item id: \'".append(item_id).append("\' is already listed on auction in auction table."));
+	}
 
-// 	// check item_ids must not be in listed sale in asset table
-// 	for(auto&& item_id : item_ids) {
-// 		check(!has_item_in_vector(asset_it->asset_item_ids_listed_sale, item_id), 
-// 			"the item id: \'".append(item_id).append("\' is already listed on sale in asset table."));
-// 	}
+	// check item_ids must not be in listed auction in asset table
+	for(auto&& item_id : item_ids) {
+		check(!has_item_in_vector(asset_it->asset_item_ids_listed_auct, item_id), 
+			"the item id: \'".append(item_id).append("\' is already listed on auction in asset table."));
+	}
 
-// 	// add the item_ids into the `item_ids` in sales table
-// 	sale_table.modify(sale_it, get_self(), [&](auto &row){
-// 		row.item_ids.insert(
-// 			sale_it->item_ids.end(),
-// 			item_ids.begin(),
-// 			item_ids.end()
-// 		);
-// 	});
+	// add the item_ids into the `item_ids` in auction table
+	auction_table.modify(auction_it, get_self(), [&](auto &row){
+		row.item_ids.insert(
+			auction_it->item_ids.end(),
+			item_ids.begin(),
+			item_ids.end()
+		);
+	});
 
-// 	// add the item_ids into the `asset_item_ids_listed_sale` in asset table
-// 	asset_table.modify(asset_it, get_self(), [&](auto &row){
-// 		row.asset_item_ids_listed_sale.insert(
-// 			asset_it->asset_item_ids_listed_sale.end(),
-// 			item_ids.begin(),
-// 			item_ids.end()
-// 		);
-// 	});
+	// add the item_ids into the `asset_item_ids_listed_auct` in asset table
+	asset_table.modify(asset_it, get_self(), [&](auto &row){
+		row.asset_item_ids_listed_auct.insert(
+			asset_it->asset_item_ids_listed_auct.end(),
+			item_ids.begin(),
+			item_ids.end()
+		);
+	});
 
-// }
+}
 
-// // --------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------
 // void oyanftmarket::rmitemauct(
 // 				uint64_t sale_id, 
 // 				uint64_t seller_id,
