@@ -394,6 +394,9 @@ void oyanftmarket::additemsale(
 	// checked the seller is original
 	check(sale_it->seller_id == seller_id, "the parsed seller_id doesn\'t match with the actual one for this sale.");
 
+	// check the sale is still ongoing
+	check(sale_it->buyer_id == 0, "the sale is closed now, so items can\'t be added.");
+
 	asset_index asset_table(get_self(), sale_it->collection_name.value);
 	auto asset_it = asset_table.find(sale_it->asset_id);
 
@@ -450,6 +453,9 @@ void oyanftmarket::rmitemsale(
 
 	// checked the seller is original
 	check(sale_it->seller_id == seller_id, "the parsed seller_id doesn\'t match with the actual one for this sale.");
+
+	// check the sale is still ongoing
+	check(sale_it->buyer_id == 0, "the sale is closed now, so items can\'t be removed.");
 
 	asset_index asset_table(get_self(), sale_it->collection_name.value);
 	auto asset_it = asset_table.find(sale_it->asset_id);
@@ -514,6 +520,9 @@ void oyanftmarket::setpricesale(
 	// checked the seller is original
 	check(sale_it->seller_id == seller_id, "the parsed seller_id doesn\'t match with the actual one for this sale.");
 
+	// check the sale is still ongoing
+	check(sale_it->buyer_id == 0, "the sale is closed now, so price can\'t be set.");
+
 	check( (price_mode == "crypto"_n) || (price_mode == "fiat"_n), "invalid price mode.");
 
 	if (price_mode == "crypto"_n) {
@@ -547,6 +556,9 @@ void oyanftmarket::buysale(
 	auto sale_it = sale_table.find(sale_id);
 
 	check(sale_it != sale_table.end(), "the sale id doesn\'t exist.");
+
+	// check the sale is still ongoing
+	check(sale_it->buyer_id == 0, "the sale is closed now, so can\'t be purchased.");
 
 	// instantiate the asset table
 	asset_index asset_table(get_self(), sale_it->collection_name.value);
@@ -583,7 +595,7 @@ void oyanftmarket::buysale(
 		oyanocreator_index oyanocreator_seller_table(get_self(), sale_it->seller_id);
 		oyanocreator_seller_it = oyanocreator_seller_table.find(sale_it->asset_id);
 
-		check(oyanocreator_seller_it != oyanocreator_seller_table.end(), "the asset containing this item doesn\'t exist for this non-creator seller.");
+		check(oyanocreator_seller_it != oyanocreator_seller_table.end(), "the asset containing item(s) doesn\'t exist for this non-creator seller.");
 
 		for(auto&& item_id : sale_it->item_ids) {
 			// check the items exist in `item_ids` in oyanocreator table
@@ -654,7 +666,7 @@ void oyanftmarket::buysale(
 	} else {
 		for (auto&& item_id : sale_it->item_ids) {
 			// check the item_ids exist in `asset_item_ids_transferred` in asset table
-			check(has_item_in_vector(asset_id->asset_item_ids_transferred, item_id), "the item id: \'".append(item_id).append("\' doesn\'t exist as transferred item in asset table."));
+			check(has_item_in_vector(asset_it->asset_item_ids_transferred, item_id), "the item id: \'".append(item_id).append("\' doesn\'t exist as transferred item in asset table."));
 	
 			// restore by removing the items from `asset_item_ids_transferred` in asset table
 			auto item_id_it = std::find(asset_it->asset_item_ids_transferred.begin(), asset_it->asset_item_ids_transferred.end(), item_id);
@@ -679,7 +691,7 @@ void oyanftmarket::buysale(
 
 
 // --------------------------------------------------------------------------------------------------------------------
-void oyanftmarket::ulistitemsale(
+void oyanftmarket::unlistsale(
 				uint64_t sale_id,
 				uint64_t seller_id
 			)
@@ -693,6 +705,9 @@ void oyanftmarket::ulistitemsale(
 
 	// checked the seller is original
 	check(sale_it->seller_id == seller_id, "the parsed seller_id doesn\'t match with the actual one for this sale.");
+
+	// check the sale is still ongoing
+	check(sale_it->buyer_id == 0, "the sale is closed now, so can\'t be unlisted.");
 
 	// remove the item_ids from `asset_item_ids_listed_sale` in asset table
 	asset_index asset_table(get_self(), sale_it->collection_name.value);
@@ -716,7 +731,7 @@ void oyanftmarket::ulistitemsale(
 
 
 // --------------------------------------------------------------------------------------------------------------------
-// mainly executed after the successful purchase automatically i.e. ACTION - buyitemsalel by system/platform
+// mainly executed after the successful purchase automatically i.e. ACTION - `buysale` by system/platform
 void oyanftmarket::delsale(
 				uint64_t sale_id
 			)
@@ -727,6 +742,8 @@ void oyanftmarket::delsale(
 	auto sale_it = sale_table.find(sale_id);
 
 	check(sale_it != sale_table.end(), "the sale id doesn\'t exist.");
+
+	check(sale_it->buyer_id != 0, "the sale is still ongoing, so can\'t be deleted now.");
 
 	// remove the item_id(s) also from `asset_item_ids_listed_sale` in asset table
 	for(auto&& item_id : sale_it->item_ids) {
@@ -749,8 +766,8 @@ void oyanftmarket::listitemauct(
 				const vector<uint64_t> item_ids,
 				uint32_t end_time,
 				const name& price_mode,
-				const asset& current_bid_crypto,
-				float current_bid_fiat_usd,
+				const asset& current_price_crypto,
+				float current_price_fiat_usd,
 			)
 {
 	require_auth(get_self());
@@ -780,8 +797,8 @@ void oyanftmarket::listitemauct(
 	// check end_time can't be now()
 	check(end_time != now(), "end_time can\'t be set as current time");
 
-	check( current_bid_crypto.is_valid(), "invalid price in crypto");
-	check( current_bid_crypto.amount > 0, "crypto qty must be positive");
+	check( current_price_crypto.is_valid(), "invalid price in crypto");
+	check( current_price_crypto.amount > 0, "crypto qty must be positive");
 
 	// find out if seller is a creator or not from assets table
 	bool is_creator = false;
@@ -818,15 +835,14 @@ void oyanftmarket::listitemauct(
 		row.start_time = now();
 		row.end_time = end_time;
 		if(price_mode == "crypto"_n) {
-			row.current_bid_crypto = current_bid_crypto;
-			row.current_bid_fiat_usd = 0;
+			row.current_price_crypto = current_price_crypto;
+			row.current_price_fiat_usd = 0;
 		}
 		else if(price_mode == "fiat"_n){
-			row.current_bid_fiat_usd = current_bid_fiat_usd;
-			row.current_bid_crypto.symbol = cryptopay_token_symbol;
+			row.current_price_fiat_usd = current_price_fiat_usd;
+			row.current_price_crypto.symbol = cryptopay_token_symbol;
 		}
 		row.claimed_by_seller = 0;
-		row.claimed_by_buyer = 0;
 		row.collection_name = collection_name;
 		row.royalty_fee = asset_id->asset_royaltyfee;
 	});
@@ -858,6 +874,9 @@ void oyanftmarket::additemauct(
 
 	// checked the seller is original
 	check(auction_it->seller_id == seller_id, "the parsed seller_id doesn\'t match with the actual one for this auction.");
+
+	// check the auction is still ongoing
+	check( (!auction_it->claimed_by_seller && (auction_it->end_time >= now()) ), "the auction is closed now, so items can\'t be added.");
 
 	asset_index asset_table(get_self(), auction_it->collection_name.value);
 	auto asset_it = asset_table.find(auction_it->asset_id);
@@ -916,6 +935,9 @@ void oyanftmarket::rmitemauct(
 	// checked the seller is original
 	check(auction_it->seller_id == seller_id, "the parsed seller_id doesn\'t match with the actual one for this auction.");
 
+	// check the auction is still ongoing
+	check( (!auction_it->claimed_by_seller && (auction_it->end_time >= now()) ), "the auction is closed now, so items can\'t be removed.");
+
 	asset_index asset_table(get_self(), auction_it->collection_name.value);
 	auto asset_it = asset_table.find(auction_it->asset_id);
 
@@ -965,7 +987,7 @@ void oyanftmarket::setpriceauct(
 				uint64_t auction_id,
 				uint64_t seller_id,
 				const name& price_mode,
-				const asset& current_bid_crypto,
+				const asset& current_price_crypto,
 				float current_bid_fiat_usd
 			)
 {
@@ -979,46 +1001,93 @@ void oyanftmarket::setpriceauct(
 	// checked the seller is original
 	check(auction_it->seller_id == seller_id, "the parsed seller_id doesn\'t match with the actual one for this auction.");
 
+	// check the auction is still ongoing
+	check( (!auction_it->claimed_by_seller && (auction_it->end_time >= now()) ), "the auction is closed now, so items can\'t be added.");
+
 	check( (price_mode == "crypto"_n) || (price_mode == "fiat"_n), "invalid price mode.");
 
 	if (price_mode == "crypto"_n) {
-		check( current_bid_crypto.amount > 0, "the listing price amount in crypto must be positive.");
+		check( current_price_crypto.amount > 0, "the listing price amount in crypto must be positive.");
 
-		check(has_item_in_vector(crypto_token_symbol_list, current_bid_crypto.symbol), "Only chosen tokens are accepted as crypto for trading asset.");
+		check(has_item_in_vector(crypto_token_symbol_list, current_price_crypto.symbol), "Only chosen tokens are accepted as crypto for trading asset.");
 
 		auction_table.modify(auction_it, get_self(), [&](auto &row){;
-			row.current_bid_crypto = current_bid_crypto;
+			row.current_price_crypto = current_price_crypto;
 		});
 
 	} else if (price_mode == "fiat"_n)  {
-		check(current_bid_fiat_usd > 0.0, "the listing price amount in USD amount must be positive.")
+		check(current_price_fiat_usd > 0.0, "the listing price amount in USD amount must be positive.")
 
 		auction_table.modify(auction_it, get_self(), [&](auto &row){;
-			row.current_bid_fiat_usd = current_bid_fiat_usd;
+			row.current_price_fiat_usd = current_price_fiat_usd;
 		});
 	}
 }
 
 
 // --------------------------------------------------------------------------------------------------------------------
-void oyanftmarket::bidauct(
+void oyanftmarket::bidforauct(
 				uint64_t auction_id,
 				uint64_t bidder_id,
-				float current_bid_fiat_usd
+				const name& pay_mode,
+				const asset& bid_price_crypto,
+				float bid_price_fiat_usd
 			)
 {
+	require_auth(get_self());
+
+	auction_index auction_table(get_self(), get_self().value);
+	auto auction_it = auction_table.find(auction_id);
+
+	check(auction_it != auction_table.end(), "the auction id doesn\'t exist.");
+
+	// check the auction is still ongoing
+	check( (!auction_it->claimed_by_seller && (auction_it->end_time >= now()) ), "the auction is closed now, so bidding can\'t be done.");
+
+	check( (pay_mode == "crypto"_n) || (pay_mode == "fiat"_n), "invalid pay mode.");
+
+	// Payment (crypto)
+	if (pay_mode == "crypto"_n) {
+		auction_table.modify(auction_it, get_self(), [&](auto &row){
+			creatify_map(row.map_bidderid_claimedbybidder, bidder_id, 0);
+			creatify_map(row.map_bidderid_cprice, bidder_id, bid_price_crypto);
+		});
+	}
+	// Payment (fiat)
+	else if (pay_mode == "fiat"_n) {
+		auction_table.modify(auction_it, get_self(), [&](auto &row){
+			creatify_map(row.map_bidderid_claimedbybidder, bidder_id, 0);
+			creatify_map(row.map_bidderid_fprice, bidder_id, bid_price_fiat_usd);
+		});
+	}
 
 }
 // --------------------------------------------------------------------------------------------------------------------
-void oyanftmarket::sconfirmauct(
+void oyanftmarket::sclaimauct(
 				uint64_t auction_id,
 				uint64_t bidder_id,
 			)
 {
-	
+	require_auth(get_self());
+
+	auction_index auction_table(get_self(), get_self().value);
+	auto auction_it = auction_table.find(auction_id);
+
+	check(auction_it != auction_table.end(), "the auction id doesn\'t exist.");
+
+	// check the auction is still ongoing
+	check( (!auction_it->claimed_by_seller && (auction_it->end_time >= now()) ), "the auction is closed now, so seller can\'t claim.");
+
+	// check whether this bidder is found in the map - `map_bidderid_claimedbybidder`
+	check( key_found_in_map(auction_it->map_bidderid_claimedbybidder, bidder_id), "This bidder is not found in the bidding list.");
+
+	auction_table.modify(auction_it, get_self(), [&](auto &row){
+		row.claimed_by_seller = 1;
+		row.confirmed_bidder_id_by_seller = bidder_id;
+	});
 }
 // --------------------------------------------------------------------------------------------------------------------
-void oyanftmarket::bconfirmauct(
+void oyanftmarket::bclaimauct(
 				uint64_t auction_id,
 				uint64_t bidder_id,
 				const name& pay_mode
@@ -1031,26 +1100,38 @@ void oyanftmarket::bconfirmauct(
 
 	check(auction_it != auction_table.end(), "the auction id doesn\'t exist.");
 
+	// check that the seller has claimed this auction
+	check( auction_it->claimed_by_seller, "The seller has not yet confirmed this auction.");
+
+	// check the auction is still ongoing
+	check( auction_it->end_time >= now(), "the auction is closed now, so bidder can\'t claim.");
+
+	// check the bidder claiming matches with the confirmed bidder by seller
+	check( auction_it->confirmed_bidder_id_by_seller == bidder_id, "This bidder has not been confirmed by the seller.");
+
 	// instantiate the asset table
 	asset_index asset_table(get_self(), auction_it->collection_name.value);
 	auto asset_it = asset_table.find(auction_it->asset_id);
 
 	check(asset_it != asset_table.end(), "there is no such asset id for the auction\'s collection name");
 
-	check( (pay_mode == "crypto"_n) || (pay_mode == "fiat"_n), "invalid price mode.");
+	check( (pay_mode == "crypto"_n) || (pay_mode == "fiat"_n), "invalid pay mode.");
 
 	// ************************************
 	// Payment (crypto)
 	if (pay_mode == "crypto"_n) {
+		check( key_found_in_map(auction_it->map_bidderid_cprice, bidder_id), "bidder had not chosen crypto pay mode for auction purchase." );
+		auto bidder_price = auction_it->map_bidderid_cprice[bidder_id];
+
 		// create asset for seller
-		auto qty_seller = asset(0, auction_it->current_bid_crypto.symbol);
-		qty_seller.amount = auction_it->current_bid_crypto.amount * (1 - auction_it->royalty_fee - platform_commission_rate); 
+		auto qty_seller = asset(0, bidder_price.symbol);
+		qty_seller.amount = bidder_price.amount * (1 - auction_it->royalty_fee - platform_commission_rate); 
 
 		// create asset for creator
-		auto qty_creator = asset(0, auction_it->current_bid_crypto.symbol);
-		qty_creator.amount = auction_it->current_bid_crypto.amount * auction_it->royalty_fee; 
+		auto qty_creator = asset(0, bidder_price.symbol);
+		qty_creator.amount = bidder_price.amount * auction_it->royalty_fee; 
 
-		sub_balance(buyer_id, auction_it->current_bid_crypto);			// from buyer
+		sub_balance(bidder_id, bidder_price);			// from buyer
 		add_balance(auction_it->seller_id, qty_seller, get_self());		// to seller
 		add_balance(asset_it->creator_id, qty_creator, get_self());		// to creator as royalty_fee
 
@@ -1066,7 +1147,7 @@ void oyanftmarket::bconfirmauct(
 		oyanocreator_index oyanocreator_seller_table(get_self(), auction_it->seller_id);
 		oyanocreator_seller_it = oyanocreator_seller_table.find(auction_it->asset_id);
 
-		check(oyanocreator_seller_it != oyanocreator_seller_table.end(), "the asset containing this item doesn\'t exist for this non-creator seller.");
+		check(oyanocreator_seller_it != oyanocreator_seller_table.end(), "the asset containing item(s) doesn\'t exist for this non-creator seller.");
 
 		for(auto&& item_id : auction_it->item_ids) {
 			// check the items exist in `item_ids` in oyanocreator table
@@ -1112,32 +1193,32 @@ void oyanftmarket::bconfirmauct(
 
 
 	// ************************************
-	// Buyer
-	// NOTE: The buyer could be creator (where, try to buy the item_id back) or non-creator
-	bool buyer_is_creator = false;
-	// check if buyer is an creator or not from asset table corresponding to asset_id
-	if(asset_it->creator_id == buyer_id) buyer_is_creator = true;
+	// Bidder
+	// NOTE: The bidder could be creator (where, try to buy the item_id back) or non-creator
+	bool bidder_is_creator = false;
+	// check if bidder is an creator or not from asset table corresponding to asset_id
+	if(asset_it->creator_id == bidder_id) bidder_is_creator = true;
 
-	if(!buyer_is_creator) {
-		oyanocreator_index oyanocreator_buyer_table(get_self(), buyer_id);
-		oyanocreator_buyer_it = oyanocreator_buyer_table.find(auction_it->asset_id);
+	if(!bidder_is_creator) {
+		oyanocreator_index oyanocreator_bidder_table(get_self(), bidder_id);
+		oyanocreator_bidder_it = oyanocreator_bidder_table.find(auction_it->asset_id);
 
-		check(oyanocreator_buyer_it != oyanocreator_buyer_table.end(), "the asset containing this item doesn\'t exist for this non-creator buyer.");
+		check(oyanocreator_bidder_it != oyanocreator_bidder_table.end(), "the asset containing this item doesn\'t exist for this non-creator bidder.");
 
 		for(auto&& item_id : auction_it->item_ids) {
-			// check that the buyer doesn't already own these items in oyanocreator table
-			check(!has_item_in_vector(oyanocreator->item_ids, item_id), "the item id: \'".append(item_id).append("\' already owned by the buyer in oyanocreator table"));
+			// check that the bidder doesn't already own these items in oyanocreator table
+			check(!has_item_in_vector(oyanocreator->item_ids, item_id), "the item id: \'".append(item_id).append("\' already owned by the bidder in oyanocreator table"));
 		}
 
 		// add the items into `item_ids` in oyanocreator table
-		oyanocreator_buyer_table.modify(oyanocreator_buyer_it, get_self(), [&](auto &row){
-			row.item_ids.insert(oyanocreator_buyer_it->item_ids.end(), auction_it->item_ids.begin(), auction_it->item_ids.end());
+		oyanocreator_bidder_table.modify(oyanocreator_bidder_it, get_self(), [&](auto &row){
+			row.item_ids.insert(oyanocreator_bidder_it->item_ids.end(), auction_it->item_ids.begin(), auction_it->item_ids.end());
 		});
 
 	} else {
 		for (auto&& item_id : auction_it->item_ids) {
 			// check the item_ids exist in `asset_item_ids_transferred` in asset table
-			check(has_item_in_vector(asset_id->asset_item_ids_transferred, item_id), "the item id: \'".append(item_id).append("\' doesn\'t exist as transferred item in asset table."));
+			check(has_item_in_vector(asset_it->asset_item_ids_transferred, item_id), "the item id: \'".append(item_id).append("\' doesn\'t exist as transferred item in asset table."));
 	
 			// restore by removing the items from `asset_item_ids_transferred` in asset table
 			auto item_id_it = std::find(asset_it->asset_item_ids_transferred.begin(), asset_it->asset_item_ids_transferred.end(), item_id);
@@ -1153,73 +1234,83 @@ void oyanftmarket::bconfirmauct(
 	}
 
 	// ************************************
-	// add buyer in auction table
+	// bidder claim by setting '1' in auction table
 	auction_table.modify(auction_it, get_self(), [&](auto &row){;
-		row.buyer_id = buyer_id;
+		creatify_map(row.map_bidderid_claimedbybidder, bidder_id, 1);
+		row.end_time = now();
+		row.status = 1;
 	});
 
 }
 
 // // --------------------------------------------------------------------------------------------------------------------
-// void oyanftmarket::ulistitemauct(
-// 				uint64_t sale_id,
-// 				uint64_t seller_id
-// 			)
-// {
-// 	require_auth(get_self());
+void oyanftmarket::ulistauction(
+				uint64_t auction_id,
+				uint64_t seller_id
+			)
+{
+	require_auth(get_self());
 
-// 	sale_index sale_table(get_self(), get_self().value);
-// 	auto sale_it = sale_table.find(sale_id);
+	auction_index auction_table(get_self(), get_self().value);
+	auto auction_it = auction_table.find(auction_id);
 
-// 	check(sale_it != sale_table.end(), "the sale id doesn\'t exist.");
+	check(auction_it != auction_table.end(), "the auction id doesn\'t exist.");
 
-// 	// checked the seller is original
-// 	check(sale_it->seller_id == seller_id, "the parsed seller_id doesn\'t match with the actual one for this sale.");
+	// checked the seller is original
+	check(auction_it->seller_id == seller_id, "the parsed seller_id doesn\'t match with the actual one for this auction.");
 
-// 	// remove the item_ids from `asset_item_ids_listed_sale` in asset table
-// 	asset_index asset_table(get_self(), sale_it->collection_name.value);
-// 	auto asset_it = asset_table.find(sale_it->asset_id);
+	// check the auction is still ongoing
+	check( (!auction_it->claimed_by_seller && (auction_it->end_time >= now()) ), "the auction is closed now, so can\'t be unlisted.");
 
-// 	check(asset_it != asset_table.end(), "there is no such asset id for this sale\'s collection name");
+	// remove the item_ids from `asset_item_ids_listed_auct` in asset table
+	asset_index asset_table(get_self(), auction_it->collection_name.value);
+	auto asset_it = asset_table.find(auction_it->asset_id);
 
-// 	// remove the item_id(s) also from asset_item_ids_listed_sale in asset table
-// 	for(auto&& item_id : sale_it->item_ids) {
-// 		auto item_id_it = std::find(asset_it->asset_item_ids_listed_sale.begin(), asset_it->asset_item_ids_listed_sale.end(), item_id);
-// 		if(item_id_it != asset_it->asset_item_ids_listed_sale.end()) {		// if item_id found
-// 			asset_table.modify(asset_it, get_self(), [&](auto &row){
-// 				row.asset_item_ids_listed_sale.erase(item_id_it);
-// 			});
-// 		}	
-// 	}
+	check(asset_it != asset_table.end(), "there is no such asset id for this auction\'s collection name");
 
-// 	sale_table.erase(sale_it);
+	// remove the item_id(s) also from asset_item_ids_listed_auct in asset table
+	for(auto&& item_id : auction_it->item_ids) {
+		auto item_id_it = std::find(asset_it->asset_item_ids_listed_auct.begin(), asset_it->asset_item_ids_listed_auct.end(), item_id);
+		if(item_id_it != asset_it->asset_item_ids_listed_auct.end()) {		// if item_id found
+			asset_table.modify(asset_it, get_self(), [&](auto &row){
+				row.asset_item_ids_listed_auct.erase(item_id_it);
+			});
+		}	
+	}
 
-// }
+	auction_table.erase(auction_it);
+
+}
 
 
-// // --------------------------------------------------------------------------------------------------------------------
-// // mainly executed after the successful purchase automatically i.e. ACTION - buyitemsalel by system/platform
-// void oyanftmarket::delauct(
-// 				uint64_t sale_id
-// 			)
-// {
-// 	require_auth(get_self());
+// --------------------------------------------------------------------------------------------------------------------
+// mainly executed after the successful purchase automatically i.e. ACTION - `bclaimauct` by system/platform
+void oyanftmarket::delauction(
+				uint64_t auction_id
+			)
+{
+	require_auth(get_self());
 
-// 	sale_index sale_table(get_self(), get_self().value);
-// 	auto sale_it = sale_table.find(sale_id);
+	auction_index auction_table(get_self(), get_self().value);
+	auto auction_it = auction_table.find(auction_id);
 
-// 	check(sale_it != sale_table.end(), "the sale id doesn\'t exist.");
+	check(auction_it != auction_table.end(), "the auction id doesn\'t exist.");
 
-// 	// remove the item_id(s) also from `asset_item_ids_listed_sale` in asset table
-// 	for(auto&& item_id : sale_it->item_ids) {
-// 		auto item_id_it = std::find(asset_it->asset_item_ids_listed_sale.begin(), asset_it->asset_item_ids_listed_sale.end(), item_id);
-// 		if(item_id_it != asset_it->asset_item_ids_listed_sale.end()) {		// if item_id found
-// 			asset_table.modify(asset_it, get_self(), [&](auto &row){
-// 				row.asset_item_ids_listed_sale.erase(item_id_it);
-// 			});
-// 		}	
-// 	}
+	// check the auction is closed only if the status is marked as '1'(when `bclaimauct` is done) no matter time is left or auction is claimed by seller
+	// NOTE: this param - 'status' is introduced only for this ACTION. Otherwise, we have to loop in the map. The prob. is the map length is too long, then
+	// it might take a long time to do this ACTION
+	check( auction_it->status, "the auction is still open, so can\'t be deleted.");
 
-// 	// delete the sale after successful purchase
-// 	sale_table.erase(sale_it);
-// }
+	// remove the item_id(s) also from `asset_item_ids_listed_auction` in asset table
+	for(auto&& item_id : auction_it->item_ids) {
+		auto item_id_it = std::find(asset_it->asset_item_ids_listed_auct.begin(), asset_it->asset_item_ids_listed_auct.end(), item_id);
+		if(item_id_it != asset_it->asset_item_ids_listed_auct.end()) {		// if item_id found
+			asset_table.modify(asset_it, get_self(), [&](auto &row){
+				row.asset_item_ids_listed_auct.erase(item_id_it);
+			});
+		}	
+	}
+
+	// delete the auction after successful purchase
+	auction_table.erase(auction_it);
+}

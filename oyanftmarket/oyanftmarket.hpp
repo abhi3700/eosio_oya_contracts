@@ -8,6 +8,7 @@
 #include <map>
 #include <cstdlib>		// for strtoull
 #include <algorithm>
+#include <tuple>
 
 
 
@@ -33,6 +34,7 @@ using eosio::checksum256;
 using std::string;
 using std::vector;
 using std::map;
+using std::make_pair;
 
 CONTRACT oyanftmarket : public contract
 {
@@ -52,7 +54,7 @@ public:
 														symbol("WAX", 4)}
 										),
 				cryptopay_token_symbol(symbol("EOS", 4))
-				latform_commission_rate(0.01)
+				platform_commission_rate(0.01)
 				{}
 
 
@@ -596,12 +598,15 @@ private:
 		uint64_t seller_id;				// seller telegram_id
 		uint32_t start_time;		// auction start time
 		uint32_t end_time;			// auction end time
-		asset current_bid_crypto;			// current bid of asset in crypto (if opted for crypto)
-		float current_bid_fiat_usd;			// current bid of asset in fiat in USD (if opted for fiat)
-		map<uint64_t, bool> bidder_ids_claimedbybuyer;		// current bidder telegram_id
+		asset current_price_crypto;			// current of asset in crypto (if opted for crypto)
+		float current_price_fiat_usd;			// current of asset in fiat in USD (if opted for fiat)
+		map<uint64_t, bool> map_bidderid_claimedbybidder;		// map of bidderid, claimedbybidder. NOTE: claimedbybidder is set to '1' only if done after claimed_by_seller, after which the price would be deducted 
+		map<uint64_t, asset> map_bidderid_cprice;				// map of bidderid, cryptoprice. 
+		map<uint64_t, float> map_bidderid_fprice;				// map of bidderid, fiatprice. 
 		bool claimed_by_seller;		// claimed by seller
-		uint64_t confirmed_bidder_id_by_seller;		// seller confirmed bidder id
+		uint64_t confirmed_bidder_id_by_seller;		// seller confirmed buyer id
 		// bool claimed_by_buyer;	// claimed by buyer
+		bool status;				// auction status
 		name collection_name;		// collection name
 		float royalty_fee;		// collection/royalty fee
 
@@ -609,14 +614,14 @@ private:
 		auto primary_key() const { return auction_id; }
 		uint64_t by_asset() const { return asset_id; }
 		uint64_t by_seller() const { return seller_id; }
-		uint64_t by_buyer() const { return buyer_id; }
+		// uint64_t by_buyer() const { return buyer_id; }
 		uint64_t by_collection() const { return collection_name.value; }
 	};
 
 	using auction_index = multi_index<"auctions"_n, auction>,
 								indexed_by< "byasset"_n, const_mem_fun<auction, uint64_t, &auction::by_asset>>,
 								indexed_by< "byseller"_n, const_mem_fun<auction, uint64_t, &auction::by_seller>>,
-								indexed_by< "bybuyer"_n, const_mem_fun<auction, uint64_t, &auction::by_buyer>>,
+								// indexed_by< "bybuyer"_n, const_mem_fun<auction, uint64_t, &auction::by_buyer>>,
 								indexed_by< "bycollection"_n, const_mem_fun<auction, uint64_t, &auction::by_collection>>,
 								>;
 
@@ -687,6 +692,32 @@ private:
 		}
 	}
 	// -----------------------------------------------------------------------------------------------------------------------
+	template<typename T1, typename T2>
+	inline void creatify_map( map<T1, T2>& m, const T1& item_key, const T2& item_val ) 
+	{
+		// auto s_it = std::find_if(m.begin(), m.end(), [&](auto& ms) {return ms.first == item_key;});
+		auto s_it = m.find(item_key);
+		if(s_it != m.end()) {		// key found
+			s_it->second = item_val;
+		}
+		else {						// key NOT found
+			m.insert( make_pair(item_key, item_val) );
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------------
+	// template<typename T1, typename T2>
+	inline bool key_found_in_map(map<T1, T2>& m, const T1& item_key) {
+		bool found = false;
+		// auto s_it = std::find_if(m.begin(), m.end(), [&](auto& ms) {return ms.first == item_key;});
+		auto it = m.find(item_key)
+
+		if (s_it != m.end()) {			// key found
+			found = true;
+		}
+
+		return found;
+	}
 
 
 };
