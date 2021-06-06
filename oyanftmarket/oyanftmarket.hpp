@@ -7,7 +7,7 @@
 #include <vector>
 #include <map>
 #include <cstdlib>		// for strtoull
-#include <algorithm>
+// #include <algorithm>
 
 
 
@@ -25,7 +25,7 @@ using eosio::current_time_point;
 using eosio::action;
 using eosio::same_payer;
 using eosio::symbol;
-// using eosio::extended_symbol;
+using eosio::extended_symbol;
 // using eosio::require_recipient;
 using eosio::checksum256;
 // using eosio::action_wrapper;
@@ -78,19 +78,18 @@ public:
 	 * @brief - withdraw amount
 	 * @details - withdraw amount from_id to to_ac
 	 * 
-	 * @param contract_ac - contract account name
 	 * @param from_id - from telegram_id
 	 * @param from_username - from telegram username
 	 * @param to_ac - to eosio account
 	 * @param quantity - qty
 	 * @param memo - memo
 	 */
-	ACTION withdraw( /*const name& contract_ac,*/
-					 uint64_t from_id,
+	ACTION withdraw( uint64_t from_id,
 					 const string& from_username,
 					 const name& to_ac,
 					 const asset& quantity,
-					 const string& memo );
+					 const string& memo 
+					);
 
 	
 	/**
@@ -131,7 +130,7 @@ public:
 				const name& collection_name,
 				const string& collection_displayname,
 				const string& collection_desc,
-				const string& collection_url,
+				const string& collection_url
 			);
 
 	/**
@@ -572,15 +571,35 @@ public:
 private:
 	// -----------------------------------------------------------------------------------------------------------------------
 	// scope: get_self()
-	TABLE cryptobal
-	{
-		uint64_t user_id;
-        asset balance;
+	// TABLE cryptobal
+	// {
+	// 	uint64_t user_id;
+ //        asset balance;
 
-        uint64_t primary_key()const { return user_id; }
+ //        uint64_t primary_key()const { return user_id; }
+	// };
+
+	// using cryptobal_index = multi_index<"cryptobal"_n, cryptobal>
+	TABLE account
+	{
+		uint64_t owner;		// telegram_id, e.g. 452435325.
+
+		/*
+			[ 
+				{ "key": { "symbol": "4,SOV", "contract": "sovmintofeos" }, "value": 30000 }, 
+				{ "key": { "symbol": "4,FROG", "contract": "frogfrogcoin" }, "value": 3500000 }, 
+				{ "key": { "symbol": "4,PEOS", "contract": "thepeostoken" }, "value": 100000 }, 
+				{ "key": { "symbol": "4,KROWN", "contract": "krowndactokn" }, "value": 7169 } 
+			]
+			
+			Here, quantity amount is 30000/10^4 = 3 i.e. asset is "3.0000 SOV"
+		*/
+		map<extended_symbol, uint64_t> balances; // map with extended_symbol, uint64_t
+
+		auto primary_key() const { return owner; }
 	};
 
-	using cryptobal_index = multi_index<"cryptobal"_n, cryptobal>
+	using account_index = multi_index<"accounts"_n, account>;
 
 	// -----------------------------------------------------------------------------------------------------------------------
 	// Table for non-creator with asset_id (with item_ids)
@@ -717,19 +736,35 @@ private:
 								>;
 
 
-	// ============================================================================================================================
+	// -----------------------------------------------------------------------------------------------------------------------
+	// UTILITY functions
+	// -----------------------------------------------------------------------------------------------------------------------
+	// get the current timestamp
+	inline uint32_t now() const {
+		return current_time_point().sec_since_epoch();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------------
+	// string to uint64_t
+	inline uint64_t str_to_uint64t(const string& s) {
+		// M-1
+		// char* end;
+		uint64_t num = strtoull(s.c_str(), NULL, 10);
+	
+		//----------------------------------------------
+		// M-2
+		// uint64_t num = lexical_cast<uint64_t>(s);
+
+		return num;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------------
 	template <typename T>
 	inline bool has_item_in_vector( const vector<T>& vec, T item) {
 		bool found = false;
 		if (std::find(vec.begin(), vec.end(), item) !=  vec.end())
 			found = true;
 		return found;
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------------
-	// get the current timestamp
-	inline uint32_t now() const {
-		return current_time_point().sec_since_epoch();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------------
@@ -810,5 +845,70 @@ private:
 		return found;
 	}
 
+	// -----------------------------------------------------------------------------------------------------------------------
+	/*	
+		Here, 2 cases are covered in which the balances map is modified when the row with (owner, balances) exist: 
+			- case-1: if the row exists & key is found. i.e. the parsed quantity symbol is found
+				- add/sub quantity amount is done by an arithmetic_op (0/1) => (-/+) 
+			- case-2: if the row exists & key is NOT found. i.e. the parsed quantity symbol is NOT found 
+	*/	
+	inline void creatify_balances_map( map<extended_symbol, uint64_t>& m, const asset& qty, 
+								bool arithmetic_op 			// add/sub balance from existing quantity
+								) {
+		auto s_it = std::find_if(m.begin(), m.end(), 
+							[&](auto& ms) {return ms.first.get_symbol() == qty.symbol;});
+		
+		if(s_it != m.end()) {		// key found
+			if (arithmetic_op == 1)
+				s_it->second += qty.amount;
+			else if (arithmetic_op == 0)
+				s_it->second -= qty.amount;
+		}
+		else {						// key NOT found
+			m.insert( make_pair(extended_symbol(qty.symbol, get_first_receiver()), qty.amount) );
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------------
+	/*	
+		Here, 2 cases are covered in which the balances map is checked for <>= than the given quantity, when the row with (owner, balances) exist: 
+			- case-1: if the row exists & key is found. i.e. the parsed quantity symbol is found
+				- check for >= , else throw message
+			- case-2: if the row exists & key is NOT found. i.e. the parsed quantity symbol is NOT found 
+				- throw message saying that there is no balances available
+	*/	
+	inline void check_amount_in_map( map<extended_symbol, uint64_t> m, const asset& qty ) {
+		auto s_it = std::find_if(m.begin(), m.end(), 
+							[&](auto& ms) {return ms.first.get_symbol() == qty.symbol;});
+		
+		if(s_it != m.end()) {		// key found
+			check( s_it->second >= qty.amount, "Insufficient balance in from\'s account." );
+		}
+		else {						// key NOT found
+			check( false, "there is no balances available corresponding to the parsed quantity symbol for the given from_id." );
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------------
+	/*	
+		Here, capture the token contract name in which the balances map exists in the row with (owner, balances) exist: 
+			- case-1: if the row exists & key is found. i.e. the parsed quantity symbol is found
+				- capture the contract ac name from the key
+	*/	
+	inline name capture_contract_in_map( map<extended_symbol, uint64_t> m, const asset& qty ) {
+		name token_contract_ac = ""_n;
+
+		auto s_it = std::find_if(m.begin(), m.end(), 
+							[&](auto& ms) {return ms.first.get_symbol() == qty.symbol;});
+		
+		if(s_it != m.end()) {		// key found
+			token_contract_ac = s_it->first.get_contract();
+		}
+		else {
+			check(false, "there is no contract account found with this quantity");
+		}
+
+		return token_contract_ac;
+	}
 
 };
