@@ -230,7 +230,10 @@ void tippertipper::tip(
 	if(s_it != frm_account_it->balances.end()) {		// key found
 		if (s_it->second == 0)			// if val == 0
 			account_table.erase(frm_account_it);
-	}	
+	}
+
+	// if memo contains 'sponsor <id>', then add the from_id to the creator's asset table
+	
 }
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -1282,16 +1285,24 @@ void oyanftmarket::bidforauct(
 	// Payment (crypto)
 	if (pay_mode == "crypto"_n) {
 		auction_table.modify(auction_it, get_self(), [&](auto &row){
-			creatify_map(row.map_bidderid_claimedbybidder, bidder_id, 0);
+			bid_t b1{};
+			b1.claimed_by_bidder = 0;
+			b1.bid_crypto_price = bid_price_crypto;
+			creatify_map(row.map_bidderid_info, bidder_id, b1, 'c');		// by default during initialization, claimed_by_bidder is set to '0'
+/*			creatify_map(row.map_bidderid_claimedbybidder, bidder_id, 0);
 			creatify_map(row.map_bidderid_cprice, bidder_id, bid_price_crypto);
-		});
+*/		});
 	}
 	// Payment (fiat)
 	else if (pay_mode == "fiat"_n) {
 		auction_table.modify(auction_it, get_self(), [&](auto &row){
-			creatify_map(row.map_bidderid_claimedbybidder, bidder_id, 0);
+			bid_t b1{};
+			b1.claimed_by_bidder = 0;
+			b1.bid_fiat_price_usd = bid_price_fiat_usd;
+			creatify_map(row.map_bidderid_info, bidder_id, b1, 'f');		// by default during initialization, claimed_by_bidder is set to '0'
+/*			creatify_map(row.map_bidderid_claimedbybidder, bidder_id, 0);
 			creatify_map(row.map_bidderid_fprice, bidder_id, bid_price_fiat_usd);
-		});
+*/		});
 	}
 
 }
@@ -1312,7 +1323,8 @@ void oyanftmarket::sclaimauct(
 	check( (!auction_it->claimed_by_seller && (auction_it->end_time >= now()) ), "the auction is closed now, so seller can\'t claim.");
 
 	// check whether this bidder is found in the map - `map_bidderid_claimedbybidder`
-	check( key_found_in_map(auction_it->map_bidderid_claimedbybidder, bidder_id), "This bidder is not found in the bidding list.");
+	check( key_found_in_map(auction_it->map_bidderid_info, bidder_id), "This bidder is not found in the bidding list.");
+	// check( key_found_in_map(auction_it->map_bidderid_claimedbybidder, bidder_id), "This bidder is not found in the bidding list.");
 
 	auction_table.modify(auction_it, get_self(), [&](auto &row){
 		row.claimed_by_seller = 1;
@@ -1353,8 +1365,10 @@ void oyanftmarket::bclaimauct(
 	// ************************************
 	// Payment (crypto)
 	if (pay_mode == "crypto"_n) {
-		check( key_found_in_map(auction_it->map_bidderid_cprice, bidder_id), "bidder had not chosen crypto pay mode for auction purchase." );
+		check( crypto_found_in_map(auction_it->map_bidderid_info, bidder_id), "bidder had not chosen crypto pay mode for auction purchase." );
+/*		check( key_found_in_map(auction_it->map_bidderid_cprice, bidder_id), "bidder had not chosen crypto pay mode for auction purchase." );
 		auto bidder_price = auction_it->map_bidderid_cprice[bidder_id];
+*/		auto bidder_price = auction_it->map_bidderid_info[bidder_id].bid_crypto_price;
 
 		// create asset for seller
 		auto qty_seller = asset(0, bidder_price.symbol);
@@ -1468,9 +1482,11 @@ void oyanftmarket::bclaimauct(
 
 	// ************************************
 	// bidder claim by setting '1' in auction table
-	auction_table.modify(auction_it, get_self(), [&](auto &row){;
-		creatify_map(row.map_bidderid_claimedbybidder, bidder_id, 1);
-		row.end_time = now();
+	auction_table.modify(auction_it, get_self(), [&](auto &row){
+		bid_t b1{};
+		b1.claimed_by_bidder = 1;
+		creatify_map(row.map_bidderid_info, bidder_id, b1, 'b');
+		// creatify_map(row.map_bidderid_claimedbybidder, bidder_id, 1);
 		row.status = 1;
 	});
 

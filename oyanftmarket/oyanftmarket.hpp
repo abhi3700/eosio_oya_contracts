@@ -699,6 +699,12 @@ private:
 
 
 	// -----------------------------------------------------------------------------------------------------------------------
+	typedef struct {
+		bool claimed_by_bidder;
+		asset bid_crypto_price;
+		float bid_fiat_price_usd;
+	} bid_t;
+
 	// scope: self i.e. oyanftmarket
 	TABLE auction
 	{
@@ -710,9 +716,10 @@ private:
 		uint32_t end_time;			// auction end time
 		asset current_price_crypto;			// current of asset in crypto (if opted for crypto)
 		float current_price_fiat_usd;			// current of asset in fiat in USD (if opted for fiat)
-		map<uint64_t, bool> map_bidderid_claimedbybidder;		// map of bidderid, claimedbybidder. NOTE: claimedbybidder is set to '1' only if done after claimed_by_seller, after which the price would be deducted 
-		map<uint64_t, asset> map_bidderid_cprice;				// map of bidderid, cryptoprice. 
-		map<uint64_t, float> map_bidderid_fprice;				// map of bidderid, fiatprice. 
+		// map<uint64_t, bool> map_bidderid_claimedbybidder;		// map of bidderid, claimedbybidder. NOTE: claimedbybidder is set to '1' only if done after claimed_by_seller, after which the price would be deducted 
+		// map<uint64_t, asset> map_bidderid_cprice;				// map of bidderid, cryptoprice. 
+		// map<uint64_t, float> map_bidderid_fprice;				// map of bidderid, fiatprice. 
+		map<uint64_t, bid_t> map_bidderid_info;						// map of bidderid, info (claimed_by_buyer, bid_crypto_price, bid_fiat_price_usd)
 		bool claimed_by_seller;		// claimed by seller
 		uint64_t confirmed_bidder_id_by_seller;		// seller confirmed buyer id
 		// bool claimed_by_buyer;	// claimed by buyer
@@ -742,6 +749,19 @@ private:
 	// get the current timestamp
 	inline uint32_t now() const {
 		return current_time_point().sec_since_epoch();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------------
+	// count no. of alphabets in a string
+	inline uint64_t count_alpha( const string& str ) {
+		uint64_t count = 0;		// no. of alphabet chars
+
+	    for (int i=0; i<=str.size(); ++i) {
+	        if (isalpha(str[i]))
+	            ++count;
+	    }
+
+	    return count;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------------
@@ -819,12 +839,14 @@ private:
 	}
 	// -----------------------------------------------------------------------------------------------------------------------
 	template<typename T1, typename T2>
-	inline void creatify_map( map<T1, T2>& m, const T1& item_key, const T2& item_val ) 
+	inline void creatify_map( map<T1, T2>& m, const T1& item_key, const T2& item_val, char item_val_type ) 
 	{
 		// auto s_it = std::find_if(m.begin(), m.end(), [&](auto& ms) {return ms.first == item_key;});
 		auto s_it = m.find(item_key);
 		if(s_it != m.end()) {		// key found
-			s_it->second = item_val;
+			if (item_val_type == 'b') s_it->second.claimed_by_bidder = item_val.claimed_by_bidder;
+			else if (item_val_type == 'c') s_it->second.bid_crypto_price = item_val.bid_crypto_price;
+			else if (item_val_type == 'f') s_it->second.bid_fiat_price_usd = item_val.bid_fiat_price_usd;
 		}
 		else {						// key NOT found
 			m.insert( make_pair(item_key, item_val) );
@@ -832,7 +854,7 @@ private:
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------------
-	// template<typename T1, typename T2>
+	template<typename T1, typename T2>
 	inline bool key_found_in_map(map<T1, T2>& m, const T1& item_key) {
 		bool found = false;
 		// auto s_it = std::find_if(m.begin(), m.end(), [&](auto& ms) {return ms.first == item_key;});
@@ -840,6 +862,34 @@ private:
 
 		if (s_it != m.end()) {			// key found
 			found = true;
+		}
+
+		return found;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------------
+	template<typename T1, typename T2>
+	inline bool crypto_found_in_map(map<T1, T2>& m, const T1& item_key) {
+		bool found = false;
+		// auto s_it = std::find_if(m.begin(), m.end(), [&](auto& ms) {return ms.first == item_key;});
+		auto it = m.find(item_key)
+
+		if (s_it != m.end()) {			// key found
+			if (s_it->second.bid_crypto_price.amount == 0) found = true;
+		}
+
+		return found;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------------
+	template<typename T1, typename T2>
+	inline bool fiat_found_in_map(map<T1, T2>& m, const T1& item_key) {
+		bool found = false;
+		// auto s_it = std::find_if(m.begin(), m.end(), [&](auto& ms) {return ms.first == item_key;});
+		auto it = m.find(item_key)
+
+		if (s_it != m.end()) {			// key found
+			if (s_it->second.bid_fiat_price_usd == 0) found = true;
 		}
 
 		return found;
