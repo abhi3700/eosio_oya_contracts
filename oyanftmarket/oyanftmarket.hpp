@@ -8,7 +8,6 @@
 #include <map>
 #include <cstdlib>		// for strtoull
 #include <algorithm>
-#include <tuple>
 
 
 
@@ -57,6 +56,64 @@ public:
 				platform_commission_rate(0.01)
 				{}
 
+	// ==================CRYPTO Wallet===============================================
+
+	/**
+	 * @brief - deposit money to the contract ac
+	 * @details - deposit money to the contract ac with memo - telegram user_id e.g. 452435325
+	 * 			- accepts any token i.e. EOSIO token e.g. "EOS", "TOE", "FUTBOL" created on a chain
+	 * @param from - user account
+	 * @param contract_ac - contract ac
+	 * @param quantity - in eosio tokens - EOS, TOE, etc.
+	 * @param memo - purpose which should include telegram user_id
+	 */
+	[[eosio::on_notify("*::transfer")]]
+	void deposit( const name& from_ac, 
+					const name& contract_ac, 
+					const asset& quantity,
+					const string& memo );
+
+
+	/**
+	 * @brief - withdraw amount
+	 * @details - withdraw amount from_id to to_ac
+	 * 
+	 * @param contract_ac - contract account name
+	 * @param from_id - from telegram_id
+	 * @param from_username - from telegram username
+	 * @param to_ac - to eosio account
+	 * @param quantity - qty
+	 * @param memo - memo
+	 */
+	ACTION withdraw( /*const name& contract_ac,*/
+					 uint64_t from_id,
+					 const string& from_username,
+					 const name& to_ac,
+					 const asset& quantity,
+					 const string& memo );
+
+	
+	/**
+	 * @brief - tip money to a person via just telegram_id
+	 * @details - no eosio account needed for both from & to users
+	 * 
+	 * @param contract_ac - contract account name
+	 * @param from_id - from telegram_id
+	 * @param to_id - to telegram_id
+	 * @param from_username - from telegram username
+	 * @param to_username - to telegram username
+	 * @param quantity - qty
+	 * @param memo - memo
+	 */
+	ACTION tip( /*const name& contract_ac,*/
+				uint64_t from_id,
+				uint64_t to_id,
+				const string& from_username,
+				const string& to_username,
+				const asset& quantity,
+				const string& memo );
+
+	// ==================NFT===============================================
 
 	/**
 	 * @brief - Add or modify collection
@@ -103,6 +160,7 @@ public:
 	 * @param asset_img_hash - asset image hash
 	 * @param asset_vid_hash - asset video hash
 	 * @param asset_gif_hash - asset gif hash
+	 * @param asset_file_hash - asset gif hash
 	 * @param asset_copies_qty_total - asset total copies qty (max. 99999)
 	 * @param asset_royaltyfee - asset royalty fee
 	 * @param asset_artist - asset artist name
@@ -120,6 +178,7 @@ public:
 				const checksum256& asset_img_hash,
 				const checksum256& asset_vid_hash,
 				const checksum256& asset_gif_hash,
+				const checksum256& asset_file_hash,
 				uint64_t asset_copies_qty_total,
 				float asset_royaltyfee,
 				const string& asset_artist
@@ -331,7 +390,7 @@ public:
 	 * @post - remove the item_id(s) also from asset_item_ids_listed_sale in asset table
 	 * 
 	 */
-	ACTION ulistitemsale(
+	ACTION unlistsale(
 				uint64_t sale_id,
 				uint64_t seller_id
 			);
@@ -357,8 +416,8 @@ public:
 	 * @param item_ids - item ids (merge multiple items into the market)
 	 * @param end_time - auction end time
 	 * @param price_mode - price mode (fiat/crypto)
-	 * @param current_bid_crypto - bid price in crypto
-	 * @param current_bid_fiat_usd - bid price in fiat (usd)
+	 * @param current_price_crypto - bid price in crypto
+	 * @param current_price_fiat_usd - bid price in fiat (usd)
 	 * 
 	 * @pre - match the chat_id in telegram with the creator_id for user verification
 	 * @pre - item(s) must not be listed before (in 'sales' TABLE)
@@ -372,8 +431,8 @@ public:
 				const vector<uint64_t> item_ids,
 				uint32_t end_time,
 				const name& price_mode,
-				const asset& current_bid_crypto,
-				float current_bid_fiat_usd,
+				const asset& current_price_crypto,
+				float current_price_fiat_usd,
 			);
 
 	/**
@@ -429,12 +488,43 @@ public:
 				uint64_t auction_id,
 				uint64_t seller_id,
 				const name& price_mode,
-				const asset& current_bid_crypto,
-				float current_bid_fiat_usd
+				const asset& current_price_crypto,
+				float current_price_fiat_usd
 			);
 
 	/**
-	 * @brief - Bidder confirm a auction (with item(s))
+	 * @brief - bid for auction
+	 * @details - bid for auction
+	 * 
+	 * @param auction_id - auction id
+	 * @param bidder_id - bidder id
+	 * @param pay_mode - pay mode
+	 * @param bid_price_crypto - bid price in crypto
+	 * @param bid_price_fiat_usd - bid price in fiat usd
+	 */
+	ACTION bidforauct(
+				uint64_t auction_id,
+				uint64_t bidder_id,
+				const name& pay_mode,
+				const asset& bid_price_crypto,
+				float bid_price_fiat_usd
+			);
+
+	/**
+	 * @brief - seller claim auction
+	 * @details - seller claim auction
+	 * 
+	 * @param auction_id - auction id
+	 * @param bidder_id - bidder id
+	 */
+	ACTION sclaimauct(
+				uint64_t auction_id,
+				uint64_t bidder_id,
+			);
+
+
+	/**
+	 * @brief - Bidder claim a auction
 	 * @details: main objectives:
 	 * 			- transfer of price amount from buyer to seller, creator (as royalty fee)
 				- transfer of assets from seller to buyer
@@ -444,9 +534,9 @@ public:
 	 * @param buyer_id - buyer id
 	 * @param pay_mode - pay mode (fiat/crypto)
 	 */
-	ACTION bconfirmauct(
+	ACTION bclaimauct(
 				uint64_t auction_id,
-				uint64_t buyer_id,
+				uint64_t bidder_id,
 				const name& pay_mode
 			);
 
@@ -462,7 +552,7 @@ public:
 	 * 
 	 * @post - remove the item_id(s) also from `asset_item_ids_listed_auct` in asset table
 	 */
-	ACTION ulistitmauct(
+	ACTION ulistauction(
 				uint64_t auction_id,
 				uint64_t seller_id
 			);
@@ -473,8 +563,8 @@ public:
 	 * 
 	 * @param auction_id - auction id
 	 */
-	ACTION delauct(
-				uint64_t sale_id
+	ACTION delauction(
+				uint64_t auction_id
 			);
 
 
@@ -544,6 +634,7 @@ private:
 		uint64_t asset_copies_qty_total;		// asset copies total qty (if burned an item, then qty is decreased here)
 		float asset_royaltyfee;			// asset royalty fee
 		string asset_artist;				// asset artist
+		vector<uint64_t> sponsors;			// list of sponsors 
 
 
 		auto primary_key() const { return asset_id; }

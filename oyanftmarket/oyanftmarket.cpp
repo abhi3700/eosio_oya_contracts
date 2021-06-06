@@ -988,7 +988,7 @@ void oyanftmarket::setpriceauct(
 				uint64_t seller_id,
 				const name& price_mode,
 				const asset& current_price_crypto,
-				float current_bid_fiat_usd
+				float current_price_fiat_usd
 			)
 {
 	require_auth(get_self());
