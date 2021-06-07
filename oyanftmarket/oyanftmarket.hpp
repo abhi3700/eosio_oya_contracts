@@ -635,6 +635,12 @@ private:
 	using collection_index = multi_index<"collections"_n, collection>;
 
 	// -----------------------------------------------------------------------------------------------------------------------
+	typedef struct {
+		float share;
+		map<extended_symbol, uint64_t> fund_crypto; 	// [OPTIONAL] map with extended_symbol, uint64_t. if works fine, otherwise, the transferred amount will be searched by telegram_id
+		float fund_usd;
+	} investor_t;
+
 	// scope: <collection_name>
 	TABLE asset
 	{
@@ -653,8 +659,17 @@ private:
 		uint64_t asset_copies_qty_total;		// asset copies total qty (if burned an item, then qty is decreased here)
 		float asset_royaltyfee;			// asset royalty fee
 		string asset_artist;				// asset artist
-		vector<uint64_t> sponsors;			// list of sponsors 
-
+		/*
+			[ 
+				{ "key": { "symbol": "4,SOV", "contract": "sovmintofeos" }, "value": 30000 }, 
+				{ "key": { "symbol": "4,FROG", "contract": "frogfrogcoin" }, "value": 3500000 }, 
+				{ "key": { "symbol": "4,PEOS", "contract": "thepeostoken" }, "value": 100000 }, 
+				{ "key": { "symbol": "4,KROWN", "contract": "krowndactokn" }, "value": 7169 } 
+			]		
+		*/
+		map<extended_symbol, uint64_t> required_fund_crypto;		// ["25 EOS", "56 TLOS"]
+		float required_fund_fiat_usd;			// required fund in fiat USD
+		map<uint64_t, investor_t> map_investorid_info;
 
 		auto primary_key() const { return asset_id; }
 		uint64_t by_creator() const { return creator_id; }
@@ -742,7 +757,35 @@ private:
 								indexed_by< "bycollection"_n, const_mem_fun<auction, uint64_t, &auction::by_collection>>,
 								>;
 
+	// -----------------------------------------------------------------------------------------------------------------------
+	// scope: collection_name
+	TABLE funding
+	{
+		uint64_t asset_id;			// asset id
+		uint64_t investor_id;		// investor telegram_id
+		uint64_t creator_id;		// creator id
+		float proposed_share;
+		asset proposed_fund_crypto;
+		float proposed_fund_fiat_usd;
+		bool confirmed_share_by_investor;
+		bool confirmed_share_by_creator;
+		bool confirmed_fund_crypto_by_investor;
+		bool confirmed_fund_crypto_by_creator;
+		bool confirmed_fund_fiat_usd_by_investor;
+		bool confirmed_fund_fiat_usd_by_creator;
+		bool is_funding_closed;		// 0/1 open/closed
 
+		auto primary_key() const { return asset_id; }
+		uint64_t by_investor() const { return investor_id; }
+		uint128_t by_assetid_investorid() const { return combine_ids(asset_id, investor_id); }
+
+		// uint64_t by_creator() const { return creator_id; }
+	};
+
+	using funding_index = multi_index<"funding"_n, funding>,
+								indexed_by< "byinvestor"_n, const_mem_fun<funding, uint64_t, &funding::by_investor>>,
+								indexed_by< "byastinvestr"_n, const_mem_fun<funding, uint128_t, &funding::by_assetid_investorid>>
+								>;
 	// -----------------------------------------------------------------------------------------------------------------------
 	// UTILITY functions
 	// -----------------------------------------------------------------------------------------------------------------------
@@ -935,7 +978,7 @@ private:
 			check( s_it->second >= qty.amount, "Insufficient balance in from\'s account." );
 		}
 		else {						// key NOT found
-			check( false, "there is no balances available corresponding to the parsed quantity symbol for the given from_id." );
+			check( false, "there is no balances map available corresponding to the parsed quantity symbol" );
 		}
 	}
 
@@ -959,6 +1002,12 @@ private:
 		}
 
 		return token_contract_ac;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------------
+	// concatenation of ids
+	static uint128_t combine_ids(const uint64_t &x, const uint64_t &y) {
+	    return (uint128_t{x} << 64) | y;
 	}
 
 };

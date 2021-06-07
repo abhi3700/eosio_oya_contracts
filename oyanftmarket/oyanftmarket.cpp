@@ -1,7 +1,7 @@
 #include "oyanftmarket.hpp"
 
 // --------------------------------------------------------------------------------------------------------------------
-void tippertipper::deposit( const name& from_ac, 
+void oyanftmarket::deposit( const name& from_ac, 
 							const name& contract_ac, 
 							const asset& quantity,
 							const string& memo ) 
@@ -68,7 +68,7 @@ void tippertipper::deposit( const name& from_ac,
 }
 
 // --------------------------------------------------------------------------------------------------------------------
-void tippertipper::withdraw( uint64_t from_id,
+void oyanftmarket::withdraw( uint64_t from_id,
 							 const string& from_username,
 							 const name& to_ac,
 							 const asset& quantity,
@@ -90,7 +90,7 @@ void tippertipper::withdraw( uint64_t from_id,
 	// check the amount present in balances map's value
 	check_amount_in_map( frm_account_it->balances, quantity );
 
-    // transfer quantity from tippertipper contract to to_ac
+    // transfer quantity from oyanftmarket contract to to_ac
     action(
 		permission_level{get_self(), "active"_n},
 		capture_contract_in_map(frm_account_it->balances, quantity),
@@ -134,7 +134,7 @@ void tippertipper::withdraw( uint64_t from_id,
 }
 
 // --------------------------------------------------------------------------------------------------------------------
-void tippertipper::tip(
+void oyanftmarket::tip(
 						uint64_t from_id,
 						uint64_t to_id,
 						const string& from_username,
@@ -802,7 +802,7 @@ void oyanftmarket::buysale(
 
 	check(asset_it != asset_table.end(), "there is no such asset id for the sale\'s collection name");
 
-	check( (pay_mode == "crypto"_n) || (pay_mode == "fiat"_n), "invalid price mode.");
+	check( (pay_mode == "crypto"_n) || (pay_mode == "fiat"_n), "invalid pay mode.");
 
 	// ************************************
 	// Payment (crypto)
@@ -1562,4 +1562,335 @@ void oyanftmarket::delauction(
 
 	// delete the auction after successful purchase
 	auction_table.erase(auction_it);
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+void oyanftmarket::raisefund(
+				uint64_t creator_id,
+				const name& collection_name,
+				uint64_t asset_id,
+				const name& pay_mode,
+				const asset& required_fund_crypto,
+				float required_fund_fiat_usd
+			)
+
+{
+	require_auth(get_self());
+
+	// check for valid collection name
+	collection_index collection_table(get_self(), creator_id);
+	auto collection_it = collection_table.find(collection_name.value);
+
+	check(collection_it != collection_table.end(), "The collection is not present.");
+
+	// add fund info into asset table
+	asset_index asset_table(get_self(), collection_name.value);
+	auto asset_it = asset_table.find(asset_id);
+
+	check(asset_it != asset_table.end(), "there is no such asset id for this auction\'s collection name");
+
+	check( (pay_mode == "crypto"_n) || (pay_mode == "fiat"_n), "invalid pay mode.");
+
+	// NOTE: Here, both crypto & fiat funding is also allowed at the same time.
+	if(pay_mode == "crypto"_n) {
+		check( required_fund_crypto.amount > 0, "amount in crypto must be positive.");
+
+		asset_table.modify(asset_it, get_self(), [&](auto &row){
+			creatify_balances_map(row.required_fund_crypto, required_fund_crypto, 1);		// 1 for add balance
+		});
+
+	} 
+	if(pay_mode == "fiat"_n) {
+		asset_table.modify(asset_it, get_self(), [&](auto &row){
+			row.required_fund_fiat_usd += required_fund_fiat_usd;
+		});
+	}
+
+
+}
+// --------------------------------------------------------------------------------------------------------------------
+void oyanftmarket::propshareast(
+				// uint64_t creator_id,
+				uint64_t investor_id,
+				const name& collection_name,
+				uint64_t asset_id,
+				float proposed_share,
+				const name& pay_mode,
+				const asset& proposed_fund_crypto,
+				float proposed_fund_fiat_usd
+			)
+{
+	require_auth(get_self());
+
+	// check for valid collection name
+	// collection_index collection_table(get_self(), creator_id);
+	// auto collection_it = collection_table.find(collection_name.value);
+
+	// check(collection_it != collection_table.end(), "The collection is not present.");
+
+	// check for valid asset id
+	asset_index asset_table(get_self(), collection_name.value);
+	auto asset_it = asset_table.find(asset_id);
+
+	check(asset_it != asset_table.end(), "there is no such asset id for this collection name");
+
+	check( (proposed_share >= 0) && (proposed_share <= 1), "proposed share must be between 0 and 1");
+
+	check( (pay_mode == "crypto"_n) || (pay_mode == "fiat"_n), "invalid pay mode.");
+
+	funding_index funding_table(get_self(), collection_name.value);
+	auto ast_inv_idx = funding_table.get_index<"byastinvestr"_n>();
+	auto ast_inv_it = ast_inv_idx.find(combine_ids(asset_id, investor_id));
+
+	if(ast_inv_it == ast_inv_idx.end()) {
+		ast_inv_idx.emplace(get_self(), [&](auto &row){
+			row.asset_id = asset_id;
+			row.investor_id = investor_id;
+			row.creator_id = asset_it->creator_id;
+			row.proposed_share = proposed_share;
+			if(pay_mode == "crypto"_n) {
+				check(proposed_fund_crypto.amount > 0, "proposed crypto fund must be positive");
+
+				// check the amount present in required_fund_crypto map's value is >= proposed_fund_crypto
+				check_amount_in_map( asset_it->required_fund_crypto, proposed_fund_crypto );
+				row.proposed_fund_crypto = proposed_fund_crypto;
+			}
+			if(pay_mode == "fiat"_n) {
+				check(proposed_fund_fiat_usd > 0, "proposed fiat fund must be positive");
+
+				check(asset_it->required_fund_fiat_usd >= proposed_fund_fiat_usd, 
+					"the proposed fiat fund by investor must be less than or equal to required fund.");
+				row.proposed_fund_fiat_usd = proposed_fund_fiat_usd;
+			}
+		});	
+	}
+	else {
+		check(!ast_inv_it->is_funding_closed, "the funding is closed. So, investor can\'t propose");
+		ast_inv_idx.modify(ast_inv_it, get_self(), [&](auto &row){
+			row.proposed_share = proposed_share;			// it could be 0 or 1 as well, in case of angel funding or something else. 
+			if(pay_mode == "crypto"_n) {
+				check(proposed_fund_crypto.amount > 0, "proposed crypto fund must be positive");
+
+				// check the amount present in required_fund_crypto map's value is >= proposed_fund_crypto
+				check_amount_in_map( asset_it->required_fund_crypto, proposed_fund_crypto );
+				row.proposed_fund_crypto = proposed_fund_crypto;
+			}
+			if(pay_mode == "fiat"_n) {
+				check(proposed_fund_fiat_usd > 0, "proposed fiat fund must be positive");
+
+				check(asset_it->required_fund_fiat_usd >= proposed_fund_fiat_usd, 
+					"the proposed fiat fund by investor must be less than or equal to required fund.");
+				row.proposed_fund_fiat_usd = proposed_fund_fiat_usd;
+			}
+		});
+
+	}
+
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+void oyanftmarket::negoshareast(
+				uint64_t creator_id,
+				uint64_t investor_id,
+				const name& collection_name,
+				uint64_t asset_id,
+				float proposed_share,
+				const asset& proposed_fund_crypto,
+				float proposed_fund_fiat_usd
+			)
+{
+	require_auth(get_self());
+
+	// // check for valid collection name
+	// collection_index collection_table(get_self(), creator_id);
+	// auto collection_it = collection_table.find(collection_name.value);
+
+	// check(collection_it != collection_table.end(), "The collection is not present.");
+
+	// check for valid asset id
+	asset_index asset_table(get_self(), collection_name.value);
+	auto asset_it = asset_table.find(asset_id);
+
+	check(asset_it != asset_table.end(), "there is no such asset id for this collection name");
+	check(asset_it->creator_id == creator_id, "fund negotiation can only be done by the asset creator");
+
+	check( (proposed_share >= 0) && (proposed_share <= 1), "proposed share must be between 0 and 1");
+
+	funding_index funding_table(get_self(), collection_name.value);
+	auto ast_inv_idx = funding_table.get_index<"byastinvestr"_n>();
+	auto ast_inv_it = ast_inv_idx.find(combine_ids(asset_id, investor_id));
+
+	check(ast_inv_it != ast_inv_idx.end(), "there is no row for this investor with this asset.");
+	check(!ast_inv_it->is_funding_closed, "the funding is closed. So, creator can\'t negotiate");
+	
+	ast_inv_idx.modify(ast_inv_it, get_self(), [&](auto &row){
+		row.proposed_share = proposed_share;			// it could be 0 or 1 as well, in case of angel funding or something else. 
+		if(ast_inv_it->proposed_fund_crypto_by_investor.amount > 0) {			// crypto mode chosen by investor
+			check(proposed_fund_crypto.amount > 0, "proposed crypto fund must be positive");
+			
+			// check the amount present in required_fund_crypto map's value is >= proposed_fund_crypto
+			check_amount_in_map( asset_it->required_fund_crypto, proposed_fund_crypto );
+			row.proposed_fund_crypto = proposed_fund_crypto;
+		}
+		if(ast_inv_it->proposed_fund_fiat_usd_by_investor > 0) {				// fiat mode chosen by investor
+			check(proposed_fund_fiat_usd > 0, "proposed fiat fund must be positive");
+
+			check(asset_it->required_fund_fiat_usd >= proposed_fund_fiat_usd, 
+				"the proposed fiat fund by creator must be less than or equal to required fund.");
+			row.proposed_fund_fiat_usd = proposed_fund_fiat_usd;
+		}
+	});
+
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+void oyanftmarket::invconfirmsf(
+				uint64_t investor_id,
+				const name& collection_name,
+				uint64_t asset_id,
+				uint8_t scfa			// 0/1/2/3 (share/crypto/fiat/all)
+			)
+{
+	// // check for valid collection name
+	// collection_index collection_table(get_self(), creator_id);
+	// auto collection_it = collection_table.find(collection_name.value);
+
+	// check(collection_it != collection_table.end(), "The collection is not present.");
+
+	// check for valid asset id
+	asset_index asset_table(get_self(), collection_name.value);
+	auto asset_it = asset_table.find(asset_id);
+
+	check(asset_it != asset_table.end(), "there is no such asset id for this collection name");
+
+	check( (scfa == 0) || (scfa == 1) || (scfa == 2) || (scfa == 3), "scfa must be 0 or 1 or 2 or 3");
+
+	funding_index funding_table(get_self(), collection_name.value);
+	auto ast_inv_idx = funding_table.get_index<"byastinvestr"_n>();
+	auto ast_inv_it = ast_inv_idx.find(combine_ids(asset_id, investor_id));
+
+	check(ast_inv_it != ast_inv_idx.end(), "there is no row for this investor with this asset.");
+	check(!ast_inv_it->is_funding_closed, "the funding is closed. So, investor can\'t confirm");
+
+	ast_inv_idx.modify(ast_inv_it, get_self(), [&](auto &row){
+		if ((scfa == 0) || (scfa == 3)) {	// share or all
+			check(ast_inv_it->confirmed_share_by_investor != 1, "the investor has already confirmed the creator share for this funding.");
+			// share can be inclusive of 0 or 1 i.e. [0, 1]
+			if((ast_inv_it->proposed_share >= 0) && (ast_inv_it->proposed_share <= 1)) row.confirmed_share_by_investor = 1;
+		}
+		if ((scfa == 1) || (scfa == 3)) {	// fund_crypto or all
+			check(ast_inv_it->confirmed_fund_crypto_by_investor != 1, "the investor has already confirmed the creator crypto fund for this funding.");			
+			if(ast_inv_it->proposed_fund_crypto.amount > 0)			// crypto mode chosen by creator
+				row.confirmed_fund_crypto_by_investor = 1;
+		}
+		if ((scfa == 2) || (scfa == 3)) {	// fund_fiatusd or all
+			check(ast_inv_it->confirmed_fund_fiat_usd_by_investor != 1, "the investor has already confirmed the creator fiat fund for this funding.");			
+			if(ast_inv_it->proposed_fund_fiat_usd > 0)				// fiat mode chosen by creator
+				row.confirmed_fund_fiat_usd_by_investor = 1;
+		}
+	});
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+void oyanftmarket::creconfirmsf(
+				uint64_t creator_id,
+				uint64_t investor_id,
+				const name& collection_name,
+				uint64_t asset_id,
+				uint8_t scfa			// 0/1/2/3 (share/crypto/fiat/all)
+			)
+{
+	// // check for valid collection name
+	// collection_index collection_table(get_self(), creator_id);
+	// auto collection_it = collection_table.find(collection_name.value);
+
+	// check(collection_it != collection_table.end(), "The collection is not present.");
+
+	// check for valid asset id
+	asset_index asset_table(get_self(), collection_name.value);
+	auto asset_it = asset_table.find(asset_id);
+
+	check(asset_it != asset_table.end(), "there is no such asset id for this collection name");
+	check(asset_it->creator_id == creator_id, "investor fund confirmation must be done by the asset creator only");
+
+	check( (scfa == 0) || (scfa == 1) || (scfa == 2) || (scfa == 3), "scfa must be 0 or 1 or 2 or 3");
+
+	funding_index funding_table(get_self(), collection_name.value);
+	auto ast_inv_idx = funding_table.get_index<"byastinvestr"_n>();
+	auto ast_inv_it = ast_inv_idx.find(combine_ids(asset_id, investor_id));
+
+	check(ast_inv_it != ast_inv_idx.end(), "there is no row for this investor with this asset.");
+	check(!ast_inv_it->is_funding_closed, "the funding is closed. So, creator can\'t confirm");
+
+	ast_inv_idx.modify(ast_inv_it, get_self(), [&](auto &row){
+		if ((scfa == 0) || (scfa == 3)) {	// share or all
+			check(ast_inv_it->confirmed_share_by_creator != 1, "the creator has already confirmed the investor share for this funding.");
+			// share can be inclusive of 0 or 1 i.e. [0, 1]
+			if((ast_inv_it->proposed_share >= 0) && (ast_inv_it->proposed_share <= 1)) row.confirmed_share_by_creator = 1;
+		}
+		if ((scfa == 1) || (scfa == 3)) {	// fund_crypto or all
+			check(ast_inv_it->confirmed_fund_crypto_by_creator != 1, "the creator has already confirmed the investor crypto fund for this funding.");			
+			if(ast_inv_it->proposed_fund_crypto.amount > 0)			// crypto mode chosen by investor
+				row.confirmed_fund_crypto_by_creator = 1;
+		}
+		if ((scfa == 2) || (scfa == 3)) {	// fund_fiatusd or all
+			check(ast_inv_it->confirmed_fund_fiat_usd_by_creator != 1, "the creator has already confirmed the investor fiat fund for this funding.");			
+			if(ast_inv_it->proposed_fund_fiat_usd > 0)				// fiat mode chosen by creator
+				row.confirmed_fund_fiat_usd_by_creator = 1;
+		}
+	});
+}
+
+
+// --------------------------------------------------------------------------------------------------------------------
+void oyanftmarket::finalizefund(
+				uint64_t creator_id,
+				uint64_t investor_id,
+				const name& collection_name,
+				uint64_t asset_id
+			)
+{
+	// // check for valid collection name
+	// collection_index collection_table(get_self(), creator_id);
+	// auto collection_it = collection_table.find(collection_name.value);
+
+	// check(collection_it != collection_table.end(), "The collection is not present.");
+
+	// check for valid asset id
+	asset_index asset_table(get_self(), collection_name.value);
+	auto asset_it = asset_table.find(asset_id);
+
+	check(asset_it != asset_table.end(), "there is no such asset id for this collection name");
+	check(asset_it->creator_id == creator_id, "investor fund confirmation must be done by the asset creator only");
+
+	funding_index funding_table(get_self(), collection_name.value);
+	auto ast_inv_idx = funding_table.get_index<"byastinvestr"_n>();
+	auto ast_inv_it = ast_inv_idx.find(combine_ids(asset_id, investor_id));
+
+	check(ast_inv_it != ast_inv_idx.end(), "there is no row for this investor with this asset.");
+	check(!ast_inv_it->is_funding_closed, "the funding is closed. So, creator can\'t confirm");
+
+	// share
+	check( confirmed_share_by_investor && confirmed_share_by_creator, "Either creator or investor has not yet confirmed the share.");
+
+	// fund_crypto
+	check( confirmed_fund_crypto_by_investor && confirmed_fund_crypto_by_creator, "Either creator or investor has not yet confirmed the crypto fund.");
+
+	// fund_fiatusd
+	check( confirmed_fund_fiat_usd_by_investor && confirmed_fund_fiat_usd_by_creator, "Either creator or investor has not yet confirmed the fiat usd fund.");
+
+
+	// transfer the money using tip as inline action
+	action(
+		permission_level{get_self(), "active"_n},
+		get_self(),
+		"tip"_n,
+		std::make_tuple(investor_id, creator_id, "", "", ast_inv_it->proposed_fund_crypto , 
+										"invest ".append(ast_inv_it->proposed_fund_crypto.to_string()).append(" for the asset id: ").append(asset_id).append(" as sponsor"))
+	).send();
+
+	// todo: move the required info to asset table
+
+	// delete the row
+	ast_inv_idx.erase(ast_inv_it);
 }
