@@ -294,12 +294,12 @@ public:
 	 * 
 	 */
 	ACTION listitemsale(
-				const name& seller_id,
+				uint64_t seller_id,
 				const name& collection_name,
 				const vector<uint64_t> item_ids,
 				const name& price_mode,
 				const asset& listing_price_crypto,
-				float listing_price_fiat
+				float listing_price_fiat_usd
 			);
 
 	/**
@@ -425,7 +425,7 @@ public:
 	 * 
 	 */
 	ACTION listitemauct(
-				const name& seller_id,
+				uint64_t seller_id,
 				const name& collection_name,
 				const vector<uint64_t> item_ids,
 				uint32_t end_time,
@@ -748,7 +748,7 @@ private:
 	} investor_t;
 
 	// scope: <collection_name>
-	TABLE asset
+	TABLE oasset
 	{
 		uint64_t asset_id;				// asset id. Another is item_id i.e. 9210<current_time><max copies upto 99999> E.g. if max_copies = 100, then 9210<start_time>1 is the 1st item_id. This is shown in the auctions, sales TABLE
 		uint64_t creator_id;			// creator telegram_id		
@@ -781,8 +781,8 @@ private:
 		uint64_t by_creator() const { return creator_id; }
 	};
 
-	using asset_index = multi_index<"assets"_n, asset,
-								indexed_by< "bycreator"_n, const_mem_fun<asset, uint64_t, &asset::by_creator>>
+	using asset_index = multi_index<"assets"_n, oasset,
+								indexed_by< "bycreator"_n, const_mem_fun<oasset, uint64_t, &oasset::by_creator>>
 								>;
 
 
@@ -951,7 +951,7 @@ private:
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------------
-	void sub_balance( uint64_t owner_id, const asset& qty ) {
+	inline void sub_balance( uint64_t owner_id, const asset& qty ) {
 		account_index account_table(get_self(), get_self().value);
 		auto frm_account_it = account_table.find(owner_id);
 
@@ -977,12 +977,12 @@ private:
 		if(to_account_it == account_table.end()) {						// table for to_ac doesn't exist
 			account_table.emplace(get_self(), [&](auto& row) {
 				row.owner = to_id;
-				// row.balances = map<extended_symbol, uint64_t>{
-				// 	make_pair(extended_symbol(qty.symbol, capture_contract_in_map( frm_account_it->balances, qty )), qty.amount)
-				// };
-				row.balances.insert( 
+				row.balances = map<extended_symbol, uint64_t>{
 					make_pair(extended_symbol(qty.symbol, capture_contract_in_map( frm_account_it->balances, qty )), qty.amount)
-				);
+				};
+				// row.balances.insert( 
+				// 	make_pair(extended_symbol(qty.symbol, capture_contract_in_map( frm_account_it->balances, qty )), qty.amount)
+				// );
 			});
 		} else {														// table for to_ac exist
 			account_table.modify(to_account_it, get_self(), [&](auto& row) {
