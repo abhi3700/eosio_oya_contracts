@@ -882,7 +882,7 @@ private:
 	}
 	// -----------------------------------------------------------------------------------------------------------------------
 	template<typename T1, typename T2>
-	inline void creatify_map( map<T1, T2>& m, const T1& item_key, const T2& item_val, char item_val_type ) 
+	inline void creatify_bidder_map( map<T1, T2>& m, const T1& item_key, const T2& item_val, char item_val_type ) 
 	{
 		// auto s_it = std::find_if(m.begin(), m.end(), [&](auto& ms) {return ms.first == item_key;});
 		auto s_it = m.find(item_key);
@@ -937,6 +937,23 @@ private:
 
 		return found;
 	}
+
+	// -----------------------------------------------------------------------------------------------------------------------
+	template<typename T1, typename T2>
+	inline void creatify_investor_map( map<T1, T2>& m, const T1& item_key, const T2& item_val ) 
+	{
+		// auto s_it = std::find_if(m.begin(), m.end(), [&](auto& ms) {return ms.first == item_key;});
+		auto s_it = m.find(item_key);
+		if(s_it != m.end()) {		// key found
+			s_it->second.share = item_val.share;
+			s_it->second.bid_crypto_price = item_val.bid_crypto_price;
+			s_it->second.bid_fiat_price_usd = item_val.bid_fiat_price_usd;
+		}
+		else {						// key NOT found
+			m.insert( make_pair(item_key, item_val) );
+		}
+	}
+
 
 	// -----------------------------------------------------------------------------------------------------------------------
 	/*	

@@ -164,10 +164,10 @@ void oyanftmarket::tip(
 	// -------------------------------------------------------------------------
 	// update (substract) the `balances' value in from_id accounts table
 	account_table.modify(frm_account_it, get_self(), [&](auto& row) {
-			creatify_map(row.balances, quantity, 0);		// 0 for sub balance
+			creatify_balances_map(row.balances, quantity, 0);		// 0 for sub balance
 /*
 		// ----------------------------------------------------------------------------
-		// code snippet for modifying the value in place of creatify_map() func
+		// code snippet for modifying the value in place of creatify_balances_map() func
 		// ----------------------------------------------------------------------------
 		bool arithmetic_op = 0;		// 0 for sub balance
 		auto s_it = std::find_if(row.balances.begin(), row.balances.end(), 
@@ -197,10 +197,10 @@ void oyanftmarket::tip(
 		});
 	} else {														// table for to_ac exist
 		account_table.modify(to_account_it, get_self(), [&](auto& row) {
-			creatify_map(row.balances, quantity, 1);	// 1 for add balance
+			creatify_balances_map(row.balances, quantity, 1);	// 1 for add balance
 
 /*			// ----------------------------------------------------------------------------
-			// code snippet for modifying the value in place of creatify_map() func
+			// code snippet for modifying the value in place of creatify_balances_map() func
 			// ----------------------------------------------------------------------------
 			bool arithmetic_op = 1;		// 1 for add balance
 			auto s_it = std::find_if(row.balances.begin(), row.balances.end(), 
@@ -1288,7 +1288,7 @@ void oyanftmarket::bidforauct(
 			bid_t b1{};
 			b1.claimed_by_bidder = 0;
 			b1.bid_crypto_price = bid_price_crypto;
-			creatify_map(row.map_bidderid_info, bidder_id, b1, 'c');		// by default during initialization, claimed_by_bidder is set to '0'
+			creatify_bidder_map(row.map_bidderid_info, bidder_id, b1, 'c');		// by default during initialization, claimed_by_bidder is set to '0'
 /*			creatify_map(row.map_bidderid_claimedbybidder, bidder_id, 0);
 			creatify_map(row.map_bidderid_cprice, bidder_id, bid_price_crypto);
 */		});
@@ -1299,7 +1299,7 @@ void oyanftmarket::bidforauct(
 			bid_t b1{};
 			b1.claimed_by_bidder = 0;
 			b1.bid_fiat_price_usd = bid_price_fiat_usd;
-			creatify_map(row.map_bidderid_info, bidder_id, b1, 'f');		// by default during initialization, claimed_by_bidder is set to '0'
+			creatify_bidder_map(row.map_bidderid_info, bidder_id, b1, 'f');		// by default during initialization, claimed_by_bidder is set to '0'
 /*			creatify_map(row.map_bidderid_claimedbybidder, bidder_id, 0);
 			creatify_map(row.map_bidderid_fprice, bidder_id, bid_price_fiat_usd);
 */		});
@@ -1601,6 +1601,8 @@ void oyanftmarket::raisefund(
 
 	} 
 	if(pay_mode == "fiat"_n) {
+		check(required_fund_fiat_usd > 0, "amount in fiat USD must be positive.");
+
 		asset_table.modify(asset_it, get_self(), [&](auto &row){
 			row.required_fund_fiat_usd += required_fund_fiat_usd;
 		});
@@ -1610,7 +1612,6 @@ void oyanftmarket::raisefund(
 }
 // --------------------------------------------------------------------------------------------------------------------
 void oyanftmarket::propshareast(
-				// uint64_t creator_id,
 				uint64_t investor_id,
 				const name& collection_name,
 				uint64_t asset_id,
@@ -1725,14 +1726,14 @@ void oyanftmarket::negoshareast(
 	
 	ast_inv_idx.modify(ast_inv_it, get_self(), [&](auto &row){
 		row.proposed_share = proposed_share;			// it could be 0 or 1 as well, in case of angel funding or something else. 
-		if(ast_inv_it->proposed_fund_crypto_by_investor.amount > 0) {			// crypto mode chosen by investor
+		if(ast_inv_it->proposed_fund_crypto.amount > 0) {			// crypto mode chosen by investor
 			check(proposed_fund_crypto.amount > 0, "proposed crypto fund must be positive");
 			
 			// check the amount present in required_fund_crypto map's value is >= proposed_fund_crypto
 			check_amount_in_map( asset_it->required_fund_crypto, proposed_fund_crypto );
 			row.proposed_fund_crypto = proposed_fund_crypto;
 		}
-		if(ast_inv_it->proposed_fund_fiat_usd_by_investor > 0) {				// fiat mode chosen by investor
+		if(ast_inv_it->proposed_fund_fiat_usd > 0) {				// fiat mode chosen by investor
 			check(proposed_fund_fiat_usd > 0, "proposed fiat fund must be positive");
 
 			check(asset_it->required_fund_fiat_usd >= proposed_fund_fiat_usd, 
@@ -1875,9 +1876,14 @@ void oyanftmarket::finalizefund(
 
 	// fund_crypto
 	check( confirmed_fund_crypto_by_investor && confirmed_fund_crypto_by_creator, "Either creator or investor has not yet confirmed the crypto fund.");
+	
+	// check the amount present in required_fund_crypto map's value is >= proposed_fund_crypto
+	check_amount_in_map( asset_it->required_fund_crypto, proposed_fund_crypto );
 
 	// fund_fiatusd
 	check( confirmed_fund_fiat_usd_by_investor && confirmed_fund_fiat_usd_by_creator, "Either creator or investor has not yet confirmed the fiat usd fund.");
+	check(asset_it->required_fund_fiat_usd >= proposed_fund_fiat_usd, 
+		"the proposed fiat fund by creator must be less than or equal to required fund.");
 
 
 	// transfer the money using tip as inline action
@@ -1889,7 +1895,30 @@ void oyanftmarket::finalizefund(
 										"invest ".append(ast_inv_it->proposed_fund_crypto.to_string()).append(" for the asset id: ").append(asset_id).append(" as sponsor"))
 	).send();
 
-	// todo: move the required info to asset table
+	// move the required info to asset table
+	// 1. crypto
+	if (ast_inv_it->proposed_fund_crypto.amount > 0) {
+		asset_table.modify(asset_it, get_self(), [&](auto &row){
+			creatify_balances_map(row.required_fund_crypto, ast_inv_it->proposed_fund_crypto, 0);		// 0 for sub balance
+		});
+	}
+
+	// 2. fiat usd
+	if (ast_inv_it->proposed_fund_fiat_usd > 0) {
+		asset_table.modify(asset_it, get_self(), [&](auto &row){
+			row.required_fund_fiat_usd -= ast_inv_it->proposed_fund_fiat_usd;
+		});
+	}
+
+	// 3. investor info
+	asset_table.modify(asset_it, get_self(), [&](auto &row){
+		investor_t i1{};
+		i1.share = ast_inv_it->proposed_share;
+		creatify_balances_map(i1.fund_crypto, ast_inv_it->proposed_fund_crypto, 1);		// 1 for add balance
+		i1.fund_usd += fund_usd;
+		creatify_investor_map(row.map_investorid_info, investor_id, i1);
+	});
+
 
 	// delete the row
 	ast_inv_idx.erase(ast_inv_it);
