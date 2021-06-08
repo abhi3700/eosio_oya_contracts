@@ -52,7 +52,7 @@ public:
 														symbol("TLOS", 4), 
 														symbol("WAX", 4)}
 										),
-				cryptopay_token_symbol(symbol("EOS", 4))
+				cryptopay_token_symbol(symbol("EOS", 4)),
 				platform_commission_rate(0.01)
 				{}
 
@@ -69,9 +69,9 @@ public:
 	 */
 	[[eosio::on_notify("*::transfer")]]
 	void deposit( const name& from_ac, 
-					const name& contract_ac, 
-					const asset& quantity,
-					const string& memo );
+							const name& contract_ac, 
+							const asset& quantity,
+							const string& memo );
 
 
 	/**
@@ -216,7 +216,7 @@ public:
 				const name& collection_name,
 				uint64_t asset_id,
 				uint64_t creator_id,
-				uint64_t item_qty,
+				uint64_t item_qty
 			);
 
 
@@ -299,7 +299,7 @@ public:
 				const vector<uint64_t> item_ids,
 				const name& price_mode,
 				const asset& listing_price_crypto,
-				float listing_price_fiat,
+				float listing_price_fiat
 			);
 
 	/**
@@ -431,7 +431,7 @@ public:
 				uint32_t end_time,
 				const name& price_mode,
 				const asset& current_price_crypto,
-				float current_price_fiat_usd,
+				float current_price_fiat_usd
 			);
 
 	/**
@@ -518,7 +518,7 @@ public:
 	 */
 	ACTION sclaimauct(
 				uint64_t auction_id,
-				uint64_t bidder_id,
+				uint64_t bidder_id
 			);
 
 
@@ -566,20 +566,126 @@ public:
 				uint64_t auction_id
 			);
 
+	
+	/**
+	 * @brief - creator raise fund
+	 * @decription - creator raise fund in crypto (all eosio based) or fiat or both
+	 * 
+	 * @creator_id - creator id
+	 * @collection_name - collection name
+	 * @asset_id - asset id
+	 * @pay_mode - pay mode
+	 * @required_fund_crypto - required fund in crypto
+	 * @required_fund_fiat_usd - required fund in fiat usd
+	 * 
+	 */
+	ACTION raisefund(
+				uint64_t creator_id,
+				const name& collection_name,
+				uint64_t asset_id,
+				const name& pay_mode,
+				const asset& required_fund_crypto,
+				float required_fund_fiat_usd
+			);
 
+
+	/**
+	 * @brief - investor propose share, fund_crypo, fund_fiatusd
+	 * @decription - investor propose share, fund_crypo, fund_fiatusd
+	 * 
+	 * @investor_id - investor id
+	 * @collection_name - collection name
+	 * @asset_id - asset id
+	 * @pay_mode - pay mode
+	 * @proposed_fund_crypto - proposed fund in crypto
+	 * @proposed_fund_fiat_usd - proposed fund in fiat usd
+	 * 
+	 */
+	ACTION propshareast(
+				uint64_t investor_id,
+				const name& collection_name,
+				uint64_t asset_id,
+				float proposed_share,
+				const name& pay_mode,
+				const asset& proposed_fund_crypto,
+				float proposed_fund_fiat_usd
+			);
+
+	/**
+	 * @brief - creator negotiate share, fund_crypo, fund_fiatusd
+	 * @decription - creator negotiate share, fund_crypo, fund_fiatusd
+	 * 
+	 * @creator_id - creator id
+	 * @investor_id - investor id
+	 * @collection_name - collection name
+	 * @asset_id - asset id
+	 * @pay_mode - pay mode
+	 * @proposed_fund_crypto - proposed fund in crypto
+	 * @proposed_fund_fiat_usd - proposed fund in fiat usd
+	 * 
+	 */
+	ACTION negoshareast(
+				uint64_t creator_id,
+				uint64_t investor_id,
+				const name& collection_name,
+				uint64_t asset_id,
+				float proposed_share,
+				const asset& proposed_fund_crypto,
+				float proposed_fund_fiat_usd
+			);
+
+	/**
+	 * @brief - investor confirm share, fund_crypo, fund_fiatusd
+	 * @decription - investor confirm share, fund_crypo, fund_fiatusd
+	 * 
+	 * @collection_name - collection name
+	 * @asset_id - asset id
+	 * @scfa - share, crypto, fiat, all
+	 */
+	ACTION invconfirmsf(
+				uint64_t investor_id,
+				const name& collection_name,
+				uint64_t asset_id,
+				uint8_t scfa			// 0/1/2/3 (share/crypto/fiat/all)
+			);
+
+	/**
+	 * @brief - creator confirm share, fund_crypo, fund_fiatusd
+	 * @decription - creator confirm share, fund_crypo, fund_fiatusd
+	 * 
+	 * @creator_id - creator id
+	 * @investor_id - investor id
+	 * @collection_name - collection name
+	 * @asset_id - asset id
+	 * @scfa - share, crypto, fiat, all
+	 */
+	ACTION creconfirmsf(
+				uint64_t creator_id,
+				uint64_t investor_id,
+				const name& collection_name,
+				uint64_t asset_id,
+				uint8_t scfa			// 0/1/2/3 (share/crypto/fiat/all)
+			);
+
+	/**
+	 * @brief - creator finalize fund share, fund_crypo, fund_fiatusd
+	 * @decription - creator finalize fund share, fund_crypo, fund_fiatusd
+	 * 
+	 * @creator_id - creator id
+	 * @investor_id - investor id
+	 * @collection_name - collection name
+	 * @asset_id - asset id
+	 */
+	ACTION finalizefund(
+				uint64_t creator_id,
+				uint64_t investor_id,
+				const name& collection_name,
+				uint64_t asset_id
+			);
 
 private:
 	// -----------------------------------------------------------------------------------------------------------------------
 	// scope: get_self()
-	// TABLE cryptobal
-	// {
-	// 	uint64_t user_id;
- //        asset balance;
-
- //        uint64_t primary_key()const { return user_id; }
-	// };
-
-	// using cryptobal_index = multi_index<"cryptobal"_n, cryptobal>
 	TABLE account
 	{
 		uint64_t owner;		// telegram_id, e.g. 452435325.
@@ -673,12 +779,10 @@ private:
 
 		auto primary_key() const { return asset_id; }
 		uint64_t by_creator() const { return creator_id; }
-		uint64_t by_curr_owner() const { return current_owner_id; }
 	};
 
 	using asset_index = multi_index<"assets"_n, asset,
-								indexed_by< "bycreator"_n, const_mem_fun<asset, uint64_t, &asset::by_creator>>,	
-								indexed_by< "bycurrowner"_n, const_mem_fun<asset, uint64_t, &asset::by_curr_owner>>	
+								indexed_by< "bycreator"_n, const_mem_fun<asset, uint64_t, &asset::by_creator>>
 								>;
 
 
@@ -705,11 +809,11 @@ private:
 		uint64_t by_collection() const { return collection_name.value; }
 	};
 
-	using sale_index = multi_index<"sales"_n, sale>,
+	using sale_index = multi_index<"sales"_n, sale,
 								indexed_by< "byasset"_n, const_mem_fun<sale, uint64_t, &sale::by_asset>>,
 								indexed_by< "byseller"_n, const_mem_fun<sale, uint64_t, &sale::by_seller>>,
 								indexed_by< "bybuyer"_n, const_mem_fun<sale, uint64_t, &sale::by_buyer>>,
-								indexed_by< "bycollection"_n, const_mem_fun<sale, uint64_t, &sale::by_collection>>,
+								indexed_by< "bycollection"_n, const_mem_fun<sale, uint64_t, &sale::by_collection>>
 								>;
 
 
@@ -750,11 +854,11 @@ private:
 		uint64_t by_collection() const { return collection_name.value; }
 	};
 
-	using auction_index = multi_index<"auctions"_n, auction>,
+	using auction_index = multi_index<"auctions"_n, auction,
 								indexed_by< "byasset"_n, const_mem_fun<auction, uint64_t, &auction::by_asset>>,
 								indexed_by< "byseller"_n, const_mem_fun<auction, uint64_t, &auction::by_seller>>,
 								// indexed_by< "bybuyer"_n, const_mem_fun<auction, uint64_t, &auction::by_buyer>>,
-								indexed_by< "bycollection"_n, const_mem_fun<auction, uint64_t, &auction::by_collection>>,
+								indexed_by< "bycollection"_n, const_mem_fun<auction, uint64_t, &auction::by_collection>>
 								>;
 
 	// -----------------------------------------------------------------------------------------------------------------------
@@ -782,7 +886,7 @@ private:
 		// uint64_t by_creator() const { return creator_id; }
 	};
 
-	using funding_index = multi_index<"funding"_n, funding>,
+	using funding_index = multi_index<"funding"_n, funding,
 								indexed_by< "byinvestor"_n, const_mem_fun<funding, uint64_t, &funding::by_investor>>,
 								indexed_by< "byastinvestr"_n, const_mem_fun<funding, uint128_t, &funding::by_assetid_investorid>>
 								>;
@@ -841,30 +945,54 @@ private:
 
 		// create unique sale id i.e. 3700<current_time><last_3_digit_tg_id>
 		// create unique auction id i.e. 3701<current_time><last_3_digit_tg_id>
-		uint64_t sale_id = str_to_uint64t(std::to_string(init_num).append(std::to_string(now())).append(creator_id_last3));
+		uint64_t astsaleauc_id = str_to_uint64t(std::to_string(init_num).append(std::to_string(now())).append(creator_id_last3));
 
-		return saleauc_id;
+		return astsaleauc_id;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------------
 	void sub_balance( uint64_t owner_id, const asset& qty ) {
-		cryptobal_index from_cryptobal_table(get_self(), get_self().value);
-		auto from_cryptobal_it = from_cryptobal_table.find(owner_id);
+		account_index account_table(get_self(), get_self().value);
+		auto frm_account_it = account_table.find(owner_id);
 
-		check(from_cryptobal_it != from_cryptobal_table.end(), "user not found in cryptobal table.")
-		check(from_cryptobal_it->balance.symbol.raw() == qty.symbol.raw(), "no crypto balance object found for buyer");
-		check( from_cryptobal_it->balance.amount >= qty.amount, "overdrawn crypto balance" );
-
-		from_cryptobal_table.modify( from_cryptobal_it, get_self(), [&]( auto& row ) {
-			 row.balance -= qty;
+		check(frm_account_it != account_table.end(), "there is no account available for the given from_id.");
+		// check the amount present in balances map's value
+		check_amount_in_map( frm_account_it->balances, qty );
+		account_table.modify(frm_account_it, get_self(), [&](auto& row) {
+			creatify_balances_map(row.balances, qty, 0);		// 0 for sub balance
 		});
 	}
 
-
 	// -----------------------------------------------------------------------------------------------------------------------
-	void add_balance( uint64_t owner_id, const asset& qty, const name& ram_payer )
+	void add_balance( uint64_t from_id, uint64_t to_id, const asset& qty, const name& ram_payer )
 	{
-		cryptobal_index to_cryptobal_table(get_self(), get_self().value);
+		account_index account_table(get_self(), get_self().value);
+		auto frm_account_it = account_table.find(from_id);
+		auto to_account_it = account_table.find(to_id);
+
+		check(frm_account_it != account_table.end(), "there is no account available for the given from_id.");
+		// check the amount present in balances map's value
+		check_amount_in_map( frm_account_it->balances, qty );
+
+		if(to_account_it == account_table.end()) {						// table for to_ac doesn't exist
+			account_table.emplace(get_self(), [&](auto& row) {
+				row.owner = to_id;
+				// row.balances = map<extended_symbol, uint64_t>{
+				// 	make_pair(extended_symbol(qty.symbol, capture_contract_in_map( frm_account_it->balances, qty )), qty.amount)
+				// };
+				row.balances.insert( 
+					make_pair(extended_symbol(qty.symbol, capture_contract_in_map( frm_account_it->balances, qty )), qty.amount)
+				);
+			});
+		} else {														// table for to_ac exist
+			account_table.modify(to_account_it, get_self(), [&](auto& row) {
+				creatify_balances_map(row.balances, qty, 1);	// 1 for add balance
+			});
+		}
+
+
+
+/*		cryptobal_index to_cryptobal_table(get_self(), get_self().value);
 		auto to_cryptobal_it = to_cryptobal_table.find(owner_id);
 
 		if( to_cryptobal_it == to_cryptobal_table.end() ) {
@@ -879,6 +1007,7 @@ private:
 			row.balance += qty;
 			});
 		}
+*/	
 	}
 	// -----------------------------------------------------------------------------------------------------------------------
 	template<typename T1, typename T2>
@@ -901,7 +1030,7 @@ private:
 	inline bool key_found_in_map(map<T1, T2>& m, const T1& item_key) {
 		bool found = false;
 		// auto s_it = std::find_if(m.begin(), m.end(), [&](auto& ms) {return ms.first == item_key;});
-		auto it = m.find(item_key)
+		auto s_it = m.find(item_key);
 
 		if (s_it != m.end()) {			// key found
 			found = true;
@@ -915,7 +1044,7 @@ private:
 	inline bool crypto_found_in_map(map<T1, T2>& m, const T1& item_key) {
 		bool found = false;
 		// auto s_it = std::find_if(m.begin(), m.end(), [&](auto& ms) {return ms.first == item_key;});
-		auto it = m.find(item_key)
+		auto s_it = m.find(item_key);
 
 		if (s_it != m.end()) {			// key found
 			if (s_it->second.bid_crypto_price.amount == 0) found = true;
@@ -929,7 +1058,7 @@ private:
 	inline bool fiat_found_in_map(map<T1, T2>& m, const T1& item_key) {
 		bool found = false;
 		// auto s_it = std::find_if(m.begin(), m.end(), [&](auto& ms) {return ms.first == item_key;});
-		auto it = m.find(item_key)
+		auto s_it = m.find(item_key);
 
 		if (s_it != m.end()) {			// key found
 			if (s_it->second.bid_fiat_price_usd == 0) found = true;

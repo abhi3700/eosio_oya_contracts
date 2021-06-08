@@ -424,7 +424,7 @@ void oyanftmarket::delitem(
 				const name& collection_name,
 				uint64_t asset_id,
 				uint64_t creator_id,
-				uint64_t item_qty,
+				uint64_t item_qty
 			)
 {
 	require_auth(get_self());
@@ -527,7 +527,7 @@ void oyanftmarket::listitemsale(
 				const vector<uint64_t> item_ids,
 				const name& price_mode,
 				const asset& listing_price_crypto,
-				float listing_price_fiat,
+				float listing_price_fiat
 			)
 {
 	require_auth(get_self());
@@ -816,9 +816,9 @@ void oyanftmarket::buysale(
 		qty_creator.amount = sale_it->listing_price_crypto.amount * sale_it->royalty_fee; 
 
 		sub_balance(buyer_id, sale_it->listing_price_crypto);			// from buyer
-		add_balance(sale_it->seller_id, qty_seller, get_self());		// to seller
-		add_balance(asset_it->creator_id, qty_creator, get_self());		// to creator as royalty_fee
-
+		add_balance(buyer_id, sale_it->seller_id, qty_seller, get_self());		// to seller
+		add_balance(buyer_id, asset_it->creator_id, qty_creator, get_self());		// to creator as royalty_fee
+		// TODO: also send the creator's share into it's investors
 	}
 
 	// ************************************
@@ -1003,7 +1003,7 @@ void oyanftmarket::listitemauct(
 				uint32_t end_time,
 				const name& price_mode,
 				const asset& current_price_crypto,
-				float current_price_fiat_usd,
+				float current_price_fiat_usd
 			)
 {
 	require_auth(get_self());
@@ -1309,7 +1309,7 @@ void oyanftmarket::bidforauct(
 // --------------------------------------------------------------------------------------------------------------------
 void oyanftmarket::sclaimauct(
 				uint64_t auction_id,
-				uint64_t bidder_id,
+				uint64_t bidder_id
 			)
 {
 	require_auth(get_self());
@@ -1379,9 +1379,9 @@ void oyanftmarket::bclaimauct(
 		qty_creator.amount = bidder_price.amount * auction_it->royalty_fee; 
 
 		sub_balance(bidder_id, bidder_price);			// from buyer
-		add_balance(auction_it->seller_id, qty_seller, get_self());		// to seller
-		add_balance(asset_it->creator_id, qty_creator, get_self());		// to creator as royalty_fee
-
+		add_balance(buyer_id, auction_it->seller_id, qty_seller, get_self());		// to seller
+		add_balance(buyer_id, asset_it->creator_id, qty_creator, get_self());		// to creator as royalty_fee
+		// TODO: also send the creator's share into it's investors
 	}
 
 	// ************************************
@@ -1844,6 +1844,8 @@ void oyanftmarket::creconfirmsf(
 
 
 // --------------------------------------------------------------------------------------------------------------------
+// TODO: should it be done by the creator [NOW implemented] or 
+// 		investor [RECOMMENDED, as the investor is allowing to deduct the money from it's account]
 void oyanftmarket::finalizefund(
 				uint64_t creator_id,
 				uint64_t investor_id,
