@@ -308,7 +308,6 @@ void oyanftmarket::delcol(
 void oyanftmarket::addmodasset(
 				const name& collection_name,
 				uint64_t creator_id,
-				uint64_t current_owner_id,
 				const string& asset_name,
 				const string& asset_desc,
 				const checksum256& asset_img_hash,
@@ -344,7 +343,6 @@ void oyanftmarket::addmodasset(
 		asset_table.emplace(get_self(), [&](auto &row){
 			row.asset_id = asset_id;
 			row.creator_id = creator_id;
-			row.current_owner_id = creator_id;
 			row.asset_name = asset_name;
 			row.asset_desc = asset_desc;
 			row.asset_img_hash = asset_img_hash;
@@ -360,7 +358,6 @@ void oyanftmarket::addmodasset(
 		});
 	} else {
 		asset_table.modify(asset_it, get_self(), [&](auto &row){
-			if (current_owner_id != 0 && current_owner_id != creator_id) row.current_owner_id = current_owner_id;
 			if (!asset_name.empty()) row.asset_name = asset_name;
 			if (!asset_desc.empty()) row.asset_desc = asset_desc;
 			if (asset_copies_qty_total != 0) row.asset_copies_qty_total = asset_copies_qty_total;
@@ -503,7 +500,7 @@ void oyanftmarket::rmitemnctor(
 	check(oyanocreator_it != oyanocreator_table.end(), "the asset containing this item doesn\'t exist for this non-creator.");
 
 	// check if item is present in `oyanocreator_it->item_ids` list
-	check(has_item_in_vector(oyanocreator_it->item_ids, item_id), std::to_string("Sorry!, the item id doesn\'t exist in the items list for the asset id \'").append(std::to_string(asset_id)).append("\' for this non-creator.") );
+	check(has_item_in_vector(oyanocreator_it->item_ids, item_id), string("Sorry!, the item id doesn\'t exist in the items list for the asset id \'").append(std::to_string(asset_id)).append("\' for this non-creator.") );
 
 	// find out the position if item_id exist
 	auto item_id_it = std::find(oyanocreator_it->item_ids.begin(), oyanocreator_it->item_ids.end(), item_id);
@@ -550,7 +547,7 @@ void oyanftmarket::listitemsale(
 	// check item_ids must not be in listed sale
 	for(auto&& item_id : item_ids) {
 		check(!has_item_in_vector(asset_it->asset_item_ids_listed_sale, item_id), 
-			"the item id: \'".append(item_id).append("\' is already listed on sale in asset table"));
+			std::string("the item id: \'").append(std::to_string(item_id)).append("\' is already listed on sale in asset table"));
 	}
 
 	// find out if seller is a creator or not from assets table
@@ -567,7 +564,7 @@ void oyanftmarket::listitemsale(
 		// check the seller (non-creator) owns the item_ids 
 		for(auto&& item_id : item_ids) {
 			check(has_item_in_vector(oyanocreator_it->item_ids, item_id), 
-				"the item id: \'".append(item_id).append("\' is not owned by the non-creator seller."));
+				string("the item id: \'").append(std::to_string(item_id)).append("\' is not owned by the non-creator seller."));
 		}
 
 	} 
@@ -645,13 +642,13 @@ void oyanftmarket::additemsale(
 	// check item_ids must not be in listed sale in sale table
 	for(auto&& item_id : item_ids) {
 		check(!has_item_in_vector(sale_it->item_ids, item_id), 
-			"the item id: \'".append(item_id).append("\' is already listed on sale in sale table."));
+			string("the item id: \'").append(std::to_string(item_id)).append("\' is already listed on sale in sale table."));
 	}
 
 	// check item_ids must not be in listed sale in asset table
 	for(auto&& item_id : item_ids) {
 		check(!has_item_in_vector(asset_it->asset_item_ids_listed_sale, item_id), 
-			"the item id: \'".append(item_id).append("\' is already listed on sale in asset table."));
+			string("the item id: \'").append(std::to_string(item_id)).append("\' is already listed on sale in asset table."));
 	}
 
 	// add the item_ids into the `item_ids` in sales table
@@ -705,13 +702,13 @@ void oyanftmarket::rmitemsale(
 	// check item_ids must be in listed sale in sale table
 	for(auto&& item_id : item_ids) {
 		check(has_item_in_vector(sale_it->item_ids, item_id), 
-			"the item id: \'".append(item_id).append("\' is not listed on sale in sale table"));
+			string("the item id: \'").append(std::to_string(item_id)).append("\' is not listed on sale in sale table"));
 	}
 
 	// check item_ids must be in listed sale in 
 	for(auto&& item_id : item_ids) {
 		check(has_item_in_vector(asset_it->asset_item_ids_listed_sale, item_id), 
-			"the item id: \'".append(item_id).append("\' is not listed on sale in asset table"));
+			string("the item id: \'").append(std::to_string(item_id)).append("\' is not listed on sale in asset table"));
 	}
 
 
@@ -837,7 +834,7 @@ void oyanftmarket::buysale(
 		for(auto&& item_id : sale_it->item_ids) {
 			// check the items exist in `item_ids` in oyanocreator table
 			check(has_item_in_vector(oyanocreator_seller_it->item_ids, item_id), 
-				"the item id: \'".append(item_id).append("\' is not owned by the seller in oyanocreator table."));
+				string("the item id: \'").append(std::to_string(item_id)).append("\' is not owned by the seller in oyanocreator table."));
 
 			// remove the items from `item_ids` in oyanocreator table
 			auto item_id_it = std::find(oyanocreator_seller_it->item_ids.begin(), oyanocreator_seller_it->item_ids.end(), item_id);
@@ -851,7 +848,7 @@ void oyanftmarket::buysale(
 	} else {
 		// check that the items does not exist into `asset_item_ids_transferred` in asset table
 		for(auto&& item_id : sale_it->item_ids) {
-			check(!has_item_in_vector(asset_it->asset_item_ids_transferred, item_id), "the item id: \'".append(item_id).append("\' already exist as transferred item in asset table"));
+			check(!has_item_in_vector(asset_it->asset_item_ids_transferred, item_id), string("the item id: \'").append(std::to_string(item_id)).append("\' already exist as transferred item in asset table"));
 		}
 
 		// add the items into `asset_item_ids_transferred` in asset table
@@ -864,7 +861,7 @@ void oyanftmarket::buysale(
 	for (auto&& item_id : sale_it->item_ids) {
 		// check the item_ids in sale table exist in `asset_item_ids_listed_sale` in asset table
 		check(has_item_in_vector(asset_it->asset_item_ids_listed_sale, item_id), 
-			"the item id: \'".append(item_id).append("\' is not listed on sale in asset table"));
+			string("the item id: \'").append(std::to_string(item_id)).append("\' is not listed on sale in asset table"));
 
 		// remove items from the `asset_item_ids_listed_sale` in asset table
 		auto item_id_it = std::find(asset_it->asset_item_ids_listed_sale.begin(), asset_it->asset_item_ids_listed_sale.end(), item_id);
@@ -892,7 +889,7 @@ void oyanftmarket::buysale(
 
 		for(auto&& item_id : sale_it->item_ids) {
 			// check that the buyer doesn't already own these items in oyanocreator table
-			check(!has_item_in_vector(oyanocreator_buyer_it->item_ids, item_id), "the item id: \'".append(item_id).append("\' already owned by the buyer in oyanocreator table"));
+			check(!has_item_in_vector(oyanocreator_buyer_it->item_ids, item_id), string("the item id: \'").append(std::to_string(item_id)).append("\' already owned by the buyer in oyanocreator table"));
 		}
 
 		// add the items into `item_ids` in oyanocreator table
@@ -903,7 +900,7 @@ void oyanftmarket::buysale(
 	} else {
 		for (auto&& item_id : sale_it->item_ids) {
 			// check the item_ids exist in `asset_item_ids_transferred` in asset table
-			check(has_item_in_vector(asset_it->asset_item_ids_transferred, item_id), "the item id: \'".append(item_id).append("\' doesn\'t exist as transferred item in asset table."));
+			check(has_item_in_vector(asset_it->asset_item_ids_transferred, item_id), string("the item id: \'").append(std::to_string(item_id)).append("\' doesn\'t exist as transferred item in asset table."));
 	
 			// restore by removing the items from `asset_item_ids_transferred` in asset table
 			auto item_id_it = std::find(asset_it->asset_item_ids_transferred.begin(), asset_it->asset_item_ids_transferred.end(), item_id);
@@ -1034,7 +1031,7 @@ void oyanftmarket::listitemauct(
 	// check item_ids must not be in listed auction
 	for(auto&& item_id : item_ids) {
 		check(!has_item_in_vector(asset_it->asset_item_ids_listed_auct, item_id), 
-			"the item id: \'".append(item_id).append("\' is already listed on auction in asset table"));
+			string("the item id: \'").append(std::to_string(item_id)).append("\' is already listed on auction in asset table"));
 	}
 
 	// check end_time can't be now()
@@ -1057,7 +1054,7 @@ void oyanftmarket::listitemauct(
 		// check the seller (non-creator) owns the item_ids 
 		for(auto&& item_id : item_ids) {
 			check(has_item_in_vector(oyanocreator_it->item_ids, item_id), 
-				"the item id: \'".append(item_id).append("\' is not owned by the non-creator seller."));
+				string("the item id: \'").append(std::to_string(item_id)).append("\' is not owned by the non-creator seller."));
 		}
 
 	} 
@@ -1132,13 +1129,13 @@ void oyanftmarket::additemauct(
 	// check item_ids must not be in listed auction in auction table
 	for(auto&& item_id : item_ids) {
 		check(!has_item_in_vector(auction_it->item_ids, item_id), 
-			"the item id: \'".append(item_id).append("\' is already listed on auction in auction table."));
+			string("the item id: \'").append(std::to_string(item_id)).append("\' is already listed on auction in auction table."));
 	}
 
 	// check item_ids must not be in listed auction in asset table
 	for(auto&& item_id : item_ids) {
 		check(!has_item_in_vector(asset_it->asset_item_ids_listed_auct, item_id), 
-			"the item id: \'".append(item_id).append("\' is already listed on auction in asset table."));
+			string("the item id: \'").append(std::to_string(item_id)).append("\' is already listed on auction in asset table."));
 	}
 
 	// add the item_ids into the `item_ids` in auction table
@@ -1192,13 +1189,13 @@ void oyanftmarket::rmitemauct(
 	// check item_ids must be in listed auction in auction table
 	for(auto&& item_id : item_ids) {
 		check(has_item_in_vector(auction_it->item_ids, item_id), 
-			"the item id: \'".append(item_id).append("\' is not listed on auction in auction table"));
+			string("the item id: \'").append(std::to_string(item_id)).append("\' is not listed on auction in auction table"));
 	}
 
 	// check item_ids must be in listed auction in 
 	for(auto&& item_id : item_ids) {
 		check(has_item_in_vector(asset_it->asset_item_ids_listed_auct, item_id), 
-			"the item id: \'".append(item_id).append("\' is not listed on auction in asset table"));
+			string("the item id: \'").append(std::to_string(item_id)).append("\' is not listed on auction in asset table"));
 	}
 
 
@@ -1386,8 +1383,8 @@ void oyanftmarket::bclaimauct(
 		qty_creator.amount = bidder_price.amount * auction_it->royalty_fee; 
 
 		sub_balance(bidder_id, bidder_price);			// from buyer
-		add_balance(buyer_id, auction_it->seller_id, qty_seller, get_self());		// to seller
-		add_balance(buyer_id, asset_it->creator_id, qty_creator, get_self());		// to creator as royalty_fee
+		add_balance(bidder_id, auction_it->seller_id, qty_seller, get_self());		// to seller
+		add_balance(bidder_id, asset_it->creator_id, qty_creator, get_self());		// to creator as royalty_fee
 		// TODO: also send the creator's share into it's investors
 	}
 
@@ -1399,14 +1396,14 @@ void oyanftmarket::bclaimauct(
 
 	if(!seller_is_creator) {
 		oyanocreator_index oyanocreator_seller_table(get_self(), auction_it->seller_id);
-		oyanocreator_seller_it = oyanocreator_seller_table.find(auction_it->asset_id);
+		auto oyanocreator_seller_it = oyanocreator_seller_table.find(auction_it->asset_id);
 
 		check(oyanocreator_seller_it != oyanocreator_seller_table.end(), "the asset containing item(s) doesn\'t exist for this non-creator seller.");
 
 		for(auto&& item_id : auction_it->item_ids) {
 			// check the items exist in `item_ids` in oyanocreator table
 			check(has_item_in_vector(oyanocreator_seller_it->item_ids, item_id), 
-				"the item id: \'".append(item_id).append("\' is not owned by the seller in oyanocreator table."));
+				string("the item id: \'").append(std::to_string(item_id)).append("\' is not owned by the seller in oyanocreator table."));
 
 			// remove the items from `item_ids` in oyanocreator table
 			auto item_id_it = std::find(oyanocreator_seller_it->item_ids.begin(), oyanocreator_seller_it->item_ids.end(), item_id);
@@ -1420,7 +1417,7 @@ void oyanftmarket::bclaimauct(
 	} else {
 		// check that the items does not exist into `asset_item_ids_transferred` in asset table
 		for(auto&& item_id : auction_it->item_ids) {
-			check(!has_item_in_vector(asset_it->asset_item_ids_transferred, item_id), "the item id: \'".append(item_id).append("\' already exist as transferred item in asset table"));
+			check(!has_item_in_vector(asset_it->asset_item_ids_transferred, item_id), string("the item id: \'").append(std::to_string(item_id)).append("\' already exist as transferred item in asset table"));
 		}
 
 		// add the items into `asset_item_ids_transferred` in asset table
@@ -1433,7 +1430,7 @@ void oyanftmarket::bclaimauct(
 	for (auto&& item_id : auction_it->item_ids) {
 		// check the item_ids in auction table exist in `asset_item_ids_listed_auct` in asset table
 		check(has_item_in_vector(asset_it->asset_item_ids_listed_auct, item_id), 
-			"the item id: \'".append(item_id).append("\' is not listed on auction in asset table"));
+			string("the item id: \'").append(std::to_string(item_id)).append("\' is not listed on auction in asset table"));
 
 		// remove items from the `asset_item_ids_listed_auct` in asset table
 		auto item_id_it = std::find(asset_it->asset_item_ids_listed_auct.begin(), asset_it->asset_item_ids_listed_sale.end(), item_id);
@@ -1455,13 +1452,13 @@ void oyanftmarket::bclaimauct(
 
 	if(!bidder_is_creator) {
 		oyanocreator_index oyanocreator_bidder_table(get_self(), bidder_id);
-		oyanocreator_bidder_it = oyanocreator_bidder_table.find(auction_it->asset_id);
+		auto oyanocreator_bidder_it = oyanocreator_bidder_table.find(auction_it->asset_id);
 
 		check(oyanocreator_bidder_it != oyanocreator_bidder_table.end(), "the asset containing this item doesn\'t exist for this non-creator bidder.");
 
 		for(auto&& item_id : auction_it->item_ids) {
 			// check that the bidder doesn't already own these items in oyanocreator table
-			check(!has_item_in_vector(oyanocreator_bidder_it->item_ids, item_id), "the item id: \'".append(item_id).append("\' already owned by the bidder in oyanocreator table"));
+			check(!has_item_in_vector(oyanocreator_bidder_it->item_ids, item_id), string("the item id: \'").append(std::to_string(item_id)).append("\' already owned by the bidder in oyanocreator table"));
 		}
 
 		// add the items into `item_ids` in oyanocreator table
@@ -1472,7 +1469,7 @@ void oyanftmarket::bclaimauct(
 	} else {
 		for (auto&& item_id : auction_it->item_ids) {
 			// check the item_ids exist in `asset_item_ids_transferred` in asset table
-			check(has_item_in_vector(asset_it->asset_item_ids_transferred, item_id), "the item id: \'".append(item_id).append("\' doesn\'t exist as transferred item in asset table."));
+			check(has_item_in_vector(asset_it->asset_item_ids_transferred, item_id), string("the item id: \'").append(std::to_string(item_id)).append("\' doesn\'t exist as transferred item in asset table."));
 	
 			// restore by removing the items from `asset_item_ids_transferred` in asset table
 			auto item_id_it = std::find(asset_it->asset_item_ids_transferred.begin(), asset_it->asset_item_ids_transferred.end(), item_id);
@@ -1556,6 +1553,9 @@ void oyanftmarket::delauction(
 	// NOTE: this param - 'status' is introduced only for this ACTION. Otherwise, we have to loop in the map. The prob. is the map length is too long, then
 	// it might take a long time to do this ACTION
 	check( auction_it->status, "the auction is still open, so can\'t be deleted.");
+
+	asset_index asset_table(get_self(), auction_it->collection_name.value);
+	auto asset_it = asset_table.find(auction_it->asset_id);
 
 	// remove the item_id(s) also from `asset_item_ids_listed_auction` in asset table
 	for(auto&& item_id : auction_it->item_ids) {
@@ -1881,13 +1881,13 @@ void oyanftmarket::finalizefund(
 	check(!ast_inv_it->is_funding_closed, "the funding is closed. So, creator can\'t confirm");
 
 	// share
-	check( confirmed_share_by_investor && confirmed_share_by_creator, "Either creator or investor has not yet confirmed the share.");
+	check( ast_inv_it->confirmed_share_by_investor && ast_inv_it->confirmed_share_by_creator, "Either creator or investor has not yet confirmed the share.");
 
 	// fund_crypto
-	check( confirmed_fund_crypto_by_investor && confirmed_fund_crypto_by_creator, "Either creator or investor has not yet confirmed the crypto fund.");
+	check( ast_inv_it->confirmed_fund_crypto_by_investor && ast_inv_it->confirmed_fund_crypto_by_creator, "Either creator or investor has not yet confirmed the crypto fund.");
 	
 	// check the amount present in required_fund_crypto map's value is >= proposed_fund_crypto
-	check_amount_in_map( asset_it->required_fund_crypto, proposed_fund_crypto );
+	check_amount_in_map( asset_it->required_fund_crypto, ast_inv_it->proposed_fund_crypto );
 
 	// fund_fiatusd
 	check( confirmed_fund_fiat_usd_by_investor && confirmed_fund_fiat_usd_by_creator, "Either creator or investor has not yet confirmed the fiat usd fund.");
@@ -1901,7 +1901,7 @@ void oyanftmarket::finalizefund(
 		get_self(),
 		"tip"_n,
 		std::make_tuple(investor_id, creator_id, "", "", ast_inv_it->proposed_fund_crypto , 
-										"invest ".append(ast_inv_it->proposed_fund_crypto.to_string()).append(" for the asset id: ").append(asset_id).append(" as sponsor"))
+										string("invest ").append(ast_inv_it->proposed_fund_crypto.to_string()).append(" for the asset id: ").append(std::to_string(asset_id)).append(" as sponsor"))
 	).send();
 
 	// move the required info to asset table
@@ -1923,9 +1923,9 @@ void oyanftmarket::finalizefund(
 	asset_table.modify(asset_it, get_self(), [&](auto &row){
 		investor_t i1{};
 		i1.share = ast_inv_it->proposed_share;
-		creatify_balances_map(i1.fund_crypto, ast_inv_it->proposed_fund_crypto, 1);		// 1 for add balance
+		// creatify_balances_map(fund_crypto, ast_inv_it->proposed_fund_crypto, 1);		// 1 for add balance
 		i1.fund_usd += fund_usd;
-		creatify_investor_map(row.map_investorid_info, investor_id, i1);
+		creatify_investor_map(row.map_investorid_info, investor_id, i1, ast_inv_it->proposed_fund_crypto, 1);	
 	});
 
 

@@ -153,7 +153,6 @@ public:
 	 * 
 	 * @param collection_name - collection name
 	 * @param creator_id - creator telegram_id (fetched directly from private chat)
-	 * @param current_owner_id - current owner id
 	 * @param asset_name - asset name
 	 * @param asset_desc - asset description
 	 * @param asset_img_hash - asset image hash
@@ -171,7 +170,6 @@ public:
 	ACTION addmodasset(
 				const name& collection_name,
 				uint64_t creator_id,
-				uint64_t current_owner_id,
 				const string& asset_name,
 				const string& asset_desc,
 				const checksum256& asset_img_hash,
@@ -743,7 +741,7 @@ private:
 	// -----------------------------------------------------------------------------------------------------------------------
 	typedef struct {
 		float share;
-		map<extended_symbol, uint64_t> fund_crypto; 	// [OPTIONAL] map with extended_symbol, uint64_t. if works fine, otherwise, the transferred amount will be searched by telegram_id
+		map<extended_symbol, uint64_t> fund_crypto; 	// [OPTIONAL] map with extended_symbol, uint64_t. if works fine, otherwise, the transferred amount will be searched by telegram_id from the history api
 		float fund_usd;
 	} investor_t;
 
@@ -752,7 +750,6 @@ private:
 	{
 		uint64_t asset_id;				// asset id. Another is item_id i.e. 9210<current_time><max copies upto 99999> E.g. if max_copies = 100, then 9210<start_time>1 is the 1st item_id. This is shown in the auctions, sales TABLE
 		uint64_t creator_id;			// creator telegram_id		
-		// uint64_t current_owner_id;		// current owner telegram_id [DEPRECATED], there can be many current owners for different item_id(s)
 		string asset_name;				// asset name
 		string asset_desc;				// asset description
 		checksum256 asset_img_hash;		// asset image hash
@@ -890,6 +887,7 @@ private:
 								indexed_by< "byinvestor"_n, const_mem_fun<funding, uint64_t, &funding::by_investor>>,
 								indexed_by< "byastinvestr"_n, const_mem_fun<funding, uint128_t, &funding::by_assetid_investorid>>
 								>;
+public:
 	// -----------------------------------------------------------------------------------------------------------------------
 	// UTILITY functions
 	// -----------------------------------------------------------------------------------------------------------------------
@@ -990,24 +988,6 @@ private:
 			});
 		}
 
-
-
-/*		cryptobal_index to_cryptobal_table(get_self(), get_self().value);
-		auto to_cryptobal_it = to_cryptobal_table.find(owner_id);
-
-		if( to_cryptobal_it == to_cryptobal_table.end() ) {
-		  to_cryptobal_table.emplace( ram_payer, [&]( auto& row ){
-		  	row.user_id = owner_id;
-			row.balance = qty;
-		  });
-		} else {
-			check(from_cryptobal_it->balance.symbol.raw() == qty.symbol.raw(), "no crypto balance object found for seller");
-			
-			to_cryptobal_table.modify( to_cryptobal_it, same_payer, [&]( auto& row ) {
-			row.balance += qty;
-			});
-		}
-*/	
 	}
 	// -----------------------------------------------------------------------------------------------------------------------
 	template<typename T1, typename T2>
@@ -1026,8 +1006,9 @@ private:
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------------
-	template<typename T1, typename T2>
-	inline bool key_found_in_map(map<T1, T2>& m, const T1& item_key) {
+	// template<typename T1, typename T2>
+	// inline bool key_found_in_map(map<T1, T2>& m, const T1& item_key) {
+	inline bool key_found_in_map(map<uint64_t, bid_t>& m, uint64_t item_key) {
 		bool found = false;
 		// auto s_it = std::find_if(m.begin(), m.end(), [&](auto& ms) {return ms.first == item_key;});
 		auto s_it = m.find(item_key);
@@ -1041,7 +1022,7 @@ private:
 
 	// -----------------------------------------------------------------------------------------------------------------------
 	template<typename T1, typename T2>
-	inline bool crypto_found_in_map(map<T1, T2>& m, const T1& item_key) {
+	inline bool crypto_found_in_map(map<uint64_t, bid_t>& m, uint64_t item_key) {
 		bool found = false;
 		// auto s_it = std::find_if(m.begin(), m.end(), [&](auto& ms) {return ms.first == item_key;});
 		auto s_it = m.find(item_key);
@@ -1054,32 +1035,49 @@ private:
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------------
-	template<typename T1, typename T2>
-	inline bool fiat_found_in_map(map<T1, T2>& m, const T1& item_key) {
-		bool found = false;
-		// auto s_it = std::find_if(m.begin(), m.end(), [&](auto& ms) {return ms.first == item_key;});
-		auto s_it = m.find(item_key);
+	// template<typename T1, typename T2>
+	// inline bool fiat_found_in_map(map<T1, T2>& m, const T1& item_key) {
+	// 	bool found = false;
+	// 	// auto s_it = std::find_if(m.begin(), m.end(), [&](auto& ms) {return ms.first == item_key;});
+	// 	auto s_it = m.find(item_key);
 
-		if (s_it != m.end()) {			// key found
-			if (s_it->second.bid_fiat_price_usd == 0) found = true;
-		}
+	// 	if (s_it != m.end()) {			// key found
+	// 		if (s_it->second.bid_fiat_price_usd == 0) found = true;
+	// 	}
 
-		return found;
-	}
+	// 	return found;
+	// }
+
 
 	// -----------------------------------------------------------------------------------------------------------------------
-	template<typename T1, typename T2>
-	inline void creatify_investor_map( map<T1, T2>& m, const T1& item_key, const T2& item_val ) 
+	// template<typename T1, typename T2>
+	inline void creatify_investor_map( map<uint64_t, investor_t>& m, uint64_t item_key, const investor_t& item_val, 
+										const asset& qty, bool arithmetic_op ) 
 	{
 		// auto s_it = std::find_if(m.begin(), m.end(), [&](auto& ms) {return ms.first == item_key;});
 		auto s_it = m.find(item_key);
-		if(s_it != m.end()) {		// key found
+		if(s_it != m.end()) {		// key found in map
 			s_it->second.share = item_val.share;
-			s_it->second.bid_crypto_price = item_val.bid_crypto_price;
-			s_it->second.bid_fiat_price_usd = item_val.bid_fiat_price_usd;
+			// todo: add if the key found
+			auto inv_fundcrypto_it = std::find_if(s_it->second.fund_crypto.begin(), s_it->second.fund_crypto.end(), 
+							[&](auto& ms) {return ms.first.get_symbol() == qty.symbol;});
+			if(inv_fundcrypto_it != s_it->second.fund_crypto.end()) {		// fund_crypto key found
+				if (arithmetic_op == 1)
+					inv_fundcrypto_it->second += qty.amount;
+				else if (arithmetic_op == 0)
+					inv_fundcrypto_it->second -= qty.amount;
+			}
+			else {						// fund_crypto key NOT found
+				s_it->second.fund_crypto.insert( make_pair(extended_symbol(qty.symbol, get_first_receiver()), qty.amount) );
+			}
+			s_it->second.fund_usd = item_val.fund_usd;
 		}
-		else {						// key NOT found
-			m.insert( make_pair(item_key, item_val) );
+		else {						// key NOT found in map
+			investor_t i1{};
+			i1.share = item_val.share;
+			i1.fund_crypto.insert(make_pair(extended_symbol(qty.symbol, get_first_receiver()), qty.amount));
+			i1.fund_usd = item_val.fund_usd;
+			m.insert( make_pair(item_key, i1) );
 		}
 	}
 
