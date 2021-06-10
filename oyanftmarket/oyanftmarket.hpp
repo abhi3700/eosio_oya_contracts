@@ -7,7 +7,7 @@
 #include <vector>
 #include <map>
 #include <cstdlib>		// for strtoull
-// #include <algorithm>
+#include <algorithm>			// for std::find_if
 
 
 
@@ -957,7 +957,7 @@ public:
 		// check the amount present in balances map's value
 		check_amount_in_map( frm_account_it->balances, qty );
 		account_table.modify(frm_account_it, get_self(), [&](auto& row) {
-			creatify_balances_map(row.balances, qty, 0);		// 0 for sub balance
+			creatify_balances_map(row.balances, qty, 0, "captract"_n);		// 0 for sub balance
 		});
 	}
 
@@ -984,7 +984,7 @@ public:
 			});
 		} else {														// table for to_ac exist
 			account_table.modify(to_account_it, get_self(), [&](auto& row) {
-				creatify_balances_map(row.balances, qty, 1);	// 1 for add balance
+				creatify_balances_map(row.balances, qty, 1, "captract"_n);	// 1 for add balance
 			});
 		}
 
@@ -1052,30 +1052,33 @@ public:
 	// -----------------------------------------------------------------------------------------------------------------------
 	// template<typename T1, typename T2>
 	inline void creatify_investor_map( map<uint64_t, investor_t>& m, uint64_t item_key, const investor_t& item_val, 
-										const asset& qty, bool arithmetic_op ) 
+										const asset& item_val_fcrypto_qty, const name& token_contract_name ) 
 	{
-		// auto s_it = std::find_if(m.begin(), m.end(), [&](auto& ms) {return ms.first == item_key;});
-		auto s_it = m.find(item_key);
+		// auto s_it = std::find_if(m.begin(), m.end(), [&](auto& ms) {return ms.first == item_key;});	// M-1
+		auto s_it = m.find(item_key);					// M-2
 		if(s_it != m.end()) {		// key found in map
-			s_it->second.share = item_val.share;
-			// todo: add if the key found
+			s_it->second.share += item_val.share;							// add the share
+
 			auto inv_fundcrypto_it = std::find_if(s_it->second.fund_crypto.begin(), s_it->second.fund_crypto.end(), 
-							[&](auto& ms) {return ms.first.get_symbol() == qty.symbol;});
+							[&](auto& ms) {return ms.first.get_symbol() == item_val_fcrypto_qty.symbol;});
 			if(inv_fundcrypto_it != s_it->second.fund_crypto.end()) {		// fund_crypto key found
-				if (arithmetic_op == 1)
-					inv_fundcrypto_it->second += qty.amount;
-				else if (arithmetic_op == 0)
-					inv_fundcrypto_it->second -= qty.amount;
+				inv_fundcrypto_it->second += item_val_fcrypto_qty.amount;					// add the crypto fund 
 			}
 			else {						// fund_crypto key NOT found
-				s_it->second.fund_crypto.insert( make_pair(extended_symbol(qty.symbol, get_first_receiver()), qty.amount) );
+				if(token_contract_name == ""_n)
+					s_it->second.fund_crypto.insert( make_pair(extended_symbol(item_val_fcrypto_qty.symbol, get_first_receiver()), item_val_fcrypto_qty.amount) );
+				else
+					s_it->second.fund_crypto.insert( make_pair(extended_symbol(item_val_fcrypto_qty.symbol, capture_contract_in_map(s_it->second.fund_crypto, item_val_fcrypto_qty)), item_val_fcrypto_qty.amount) );
 			}
-			s_it->second.fund_usd = item_val.fund_usd;
+			s_it->second.fund_usd += item_val.fund_usd;						// add the fiat fund
 		}
 		else {						// key NOT found in map
 			investor_t i1{};
 			i1.share = item_val.share;
-			i1.fund_crypto.insert(make_pair(extended_symbol(qty.symbol, get_first_receiver()), qty.amount));
+			if(token_contract_name == ""_n)
+				i1.fund_crypto.insert(make_pair(extended_symbol(item_val_fcrypto_qty.symbol, get_first_receiver()), item_val_fcrypto_qty.amount));
+			else 
+				i1.fund_crypto.insert(make_pair(extended_symbol(item_val_fcrypto_qty.symbol, capture_contract_in_map(m, item_val_fcrypto_qty)), item_val_fcrypto_qty.amount));
 			i1.fund_usd = item_val.fund_usd;
 			m.insert( make_pair(item_key, i1) );
 		}
@@ -1090,8 +1093,8 @@ public:
 			- case-2: if the row exists & key is NOT found. i.e. the parsed quantity symbol is NOT found 
 	*/	
 	inline void creatify_balances_map( map<extended_symbol, uint64_t>& m, const asset& qty, 
-								bool arithmetic_op 			// add/sub balance from existing quantity
-								) {
+								bool arithmetic_op, 			// add/sub balance from existing quantity
+								const name& token_contract_name ) {
 		auto s_it = std::find_if(m.begin(), m.end(), 
 							[&](auto& ms) {return ms.first.get_symbol() == qty.symbol;});
 		
@@ -1102,7 +1105,10 @@ public:
 				s_it->second -= qty.amount;
 		}
 		else {						// key NOT found
-			m.insert( make_pair(extended_symbol(qty.symbol, get_first_receiver()), qty.amount) );
+			if (token_contract_name == ""_n)
+				m.insert( make_pair(extended_symbol(qty.symbol, get_first_receiver()), qty.amount) );
+			else
+				m.insert( make_pair(extended_symbol(qty.symbol, capture_contract_in_map(m, qty)), qty.amount) );
 		}
 	}
 

@@ -40,7 +40,7 @@ void oyanftmarket::deposit( const name& from_ac,
 		} 
 		else {
 			account_table.modify(account_it, get_self(), [&](auto& row) {
-				creatify_balances_map(row.balances, quantity, 1);		// 1 for add balance
+				creatify_balances_map(row.balances, quantity, 1, ""_n);		// 1 for add balance
 /*
 				// ----------------------------------------------------------------------------
 				// code snippet for modifying the value in place of creatify_balances_map() func
@@ -100,7 +100,7 @@ void oyanftmarket::withdraw( uint64_t from_id,
 
 	// update (substract) the balances' value in from_id accounts table
 	account_table.modify(frm_account_it, get_self(), [&](auto& row) {
-		creatify_balances_map(row.balances, quantity, 0);		// 0 for sub balance
+		creatify_balances_map(row.balances, quantity, 0, "captract"_n);		// 0 for sub balance
 /*
 		// ----------------------------------------------------------------------------
 		// code snippet for modifying the value in place of creatify_balances_map() func
@@ -164,7 +164,7 @@ void oyanftmarket::tip(
 	// -------------------------------------------------------------------------
 	// update (substract) the `balances' value in from_id accounts table
 	account_table.modify(frm_account_it, get_self(), [&](auto& row) {
-			creatify_balances_map(row.balances, quantity, 0);		// 0 for sub balance
+			creatify_balances_map(row.balances, quantity, 0, "captract"_n);		// 0 for sub balance
 /*
 		// ----------------------------------------------------------------------------
 		// code snippet for modifying the value in place of creatify_balances_map() func
@@ -197,7 +197,7 @@ void oyanftmarket::tip(
 		});
 	} else {														// table for to_ac exist
 		account_table.modify(to_account_it, get_self(), [&](auto& row) {
-			creatify_balances_map(row.balances, quantity, 1);	// 1 for add balance
+			creatify_balances_map(row.balances, quantity, 1, "captract"_n);	// 1 for add balance
 
 /*			// ----------------------------------------------------------------------------
 			// code snippet for modifying the value in place of creatify_balances_map() func
@@ -1603,7 +1603,7 @@ void oyanftmarket::raisefund(
 		check( required_fund_crypto.amount > 0, "amount in crypto must be positive.");
 
 		asset_table.modify(asset_it, get_self(), [&](auto &row){
-			creatify_balances_map(row.required_fund_crypto, required_fund_crypto, 1);		// 1 for add balance
+			creatify_balances_map(row.required_fund_crypto, required_fund_crypto, 1, "captract"_n);		// 1 for add balance
 		});
 
 	} 
@@ -1908,7 +1908,7 @@ void oyanftmarket::finalizefund(
 	// 1. crypto
 	if (ast_inv_it->proposed_fund_crypto.amount > 0) {
 		asset_table.modify(asset_it, get_self(), [&](auto &row){
-			creatify_balances_map(row.required_fund_crypto, ast_inv_it->proposed_fund_crypto, 0);		// 0 for sub balance
+			creatify_balances_map(row.required_fund_crypto, ast_inv_it->proposed_fund_crypto, 0, "captract"_n);		// 0 for sub balance
 		});
 	}
 
@@ -1924,8 +1924,8 @@ void oyanftmarket::finalizefund(
 		investor_t i1{};
 		i1.share = ast_inv_it->proposed_share;
 		// creatify_balances_map(fund_crypto, ast_inv_it->proposed_fund_crypto, 1);		// 1 for add balance
-		i1.fund_usd += fund_usd;
-		creatify_investor_map(row.map_investorid_info, investor_id, i1, ast_inv_it->proposed_fund_crypto, 1);	
+		i1.fund_usd = fund_usd;
+		creatify_investor_map(row.map_investorid_info, investor_id, i1, ast_inv_it->proposed_fund_crypto, "captract"_n);	
 	});
 
 
