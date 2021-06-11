@@ -741,11 +741,11 @@ private:
 	using collection_index = multi_index<"collections"_n, collection>;
 
 	// -----------------------------------------------------------------------------------------------------------------------
-	typedef struct {
+	struct investor_t {
 		float share;
 		map<extended_symbol, uint64_t> fund_crypto; 	// [OPTIONAL] map with extended_symbol, uint64_t. if works fine, otherwise, the transferred amount will be searched by telegram_id from the history api
 		float fund_usd;
-	} investor_t;
+	};
 
 	// scope: <collection_name>
 	TABLE oasset
@@ -817,11 +817,11 @@ private:
 
 
 	// -----------------------------------------------------------------------------------------------------------------------
-	typedef struct {
+	struct bid_t{
 		bool claimed_by_bidder;
 		asset bid_crypto_price;
 		float bid_fiat_price_usd;
-	} bid_t;
+	};
 
 	// scope: self i.e. oyanftmarket
 	TABLE auction

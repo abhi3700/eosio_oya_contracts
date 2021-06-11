@@ -4,24 +4,6 @@
     "types": [],
     "structs": [
         {
-            "name": "",
-            "base": "",
-            "fields": [
-                {
-                    "name": "share",
-                    "type": "float32"
-                },
-                {
-                    "name": "fund_crypto",
-                    "type": "pair_extended_symbol_uint64[]"
-                },
-                {
-                    "name": "fund_usd",
-                    "type": "float32"
-                }
-            ]
-        },
-        {
             "name": "account",
             "base": "",
             "fields": [
@@ -242,6 +224,24 @@
                 {
                     "name": "pay_mode",
                     "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "bid_t",
+            "base": "",
+            "fields": [
+                {
+                    "name": "claimed_by_bidder",
+                    "type": "bool"
+                },
+                {
+                    "name": "bid_crypto_price",
+                    "type": "asset"
+                },
+                {
+                    "name": "bid_fiat_price_usd",
+                    "type": "float32"
                 }
             ]
         },
@@ -524,6 +524,24 @@
                 {
                     "name": "scfa",
                     "type": "uint8"
+                }
+            ]
+        },
+        {
+            "name": "investor_t",
+            "base": "",
+            "fields": [
+                {
+                    "name": "share",
+                    "type": "float32"
+                },
+                {
+                    "name": "fund_crypto",
+                    "type": "pair_extended_symbol_uint64[]"
+                },
+                {
+                    "name": "fund_usd",
+                    "type": "float32"
                 }
             ]
         },

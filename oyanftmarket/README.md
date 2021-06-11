@@ -98,10 +98,10 @@ warning: transaction executed locally, but may not be confirmed by the network y
 ## Testing
 ### Action - `deposit` (on_notify action)
 #### EOS
-* `tipuser11111` transfer some quantity (in EOS) to contract account
-  - show the tippertipper accounts balance of `tipuser11111`
+* `oyausr111111` transfer some quantity (in EOS) to contract account
+  - show the oyanftmarket accounts balance of `oyausr111111`
 ```console
-$ cleost get table tippertipper tippertipper accounts --show-payer --lower 145624324 --upper 145624324
+$ cleost get table oyanftmarket oyanftmarket accounts --show-payer --lower 1456243456 --upper 1456243456
 {
   "rows": [],
   "more": false,
@@ -109,18 +109,18 @@ $ cleost get table tippertipper tippertipper accounts --show-payer --lower 14562
   "next_key_bytes": ""
 }
 ```
-	- show the eosio.token balance (EOS) of `tipuser11111`
+	- show the eosio.token balance (EOS) of `oyausr111111`
 ```console
-$ cleost get table eosio.token tipuser11111 accounts --show-payer
+$ cleost get table eosio.token oyausr111111 accounts --show-payer
 {
   "rows": [{
       "data": {
-        "balance": "94.9899 EOS"
+        "balance": "200.0000 EOS"
       },
-      "payer": "tipuser11111"
+      "payer": "oyausr111111"
     },{
       "data": {
-        "balance": "100.0000 JUNGLE"
+        "balance": "200.0000 JUNGLE"
       },
       "payer": "junglefaucet"
     }
@@ -132,30 +132,30 @@ $ cleost get table eosio.token tipuser11111 accounts --show-payer
 ```
 	- transfer
 ```console
-$ cleost push action eosio.token transfer '["tipuser11111", "tippertipper", "10.0000 EOS", "145624324"]' -p tipuser11111@active
-executed transaction: 097f9a8498af29d0ca87952cac2ffa78b295ab480aa9a95aec3614a8162c8176  136 bytes  164 us
-#   eosio.token <= eosio.token::transfer        {"from":"tipuser11111","to":"tippertipper","quantity":"10.0000 EOS","memo":"145624324"}
-#  tipuser11111 <= eosio.token::transfer        {"from":"tipuser11111","to":"tippertipper","quantity":"10.0000 EOS","memo":"145624324"}
-#  tippertipper <= eosio.token::transfer        {"from":"tipuser11111","to":"tippertipper","quantity":"10.0000 EOS","memo":"145624324"}
+$ cleost push action eosio.token transfer '["oyausr111111", "oyanftmarket", "1.0000 EOS", "1456243456"]' -p oyausr111111@active
+executed transaction: 0c9a7b1e228a1b16278e096b982592031ac4a30ab8fefa5284e6883b9906612b  136 bytes  220 us
+#   eosio.token <= eosio.token::transfer        {"from":"oyausr111111","to":"oyanftmarket","quantity":"1.0000 EOS","memo":"1456243456"}
+#  oyausr111111 <= eosio.token::transfer        {"from":"oyausr111111","to":"oyanftmarket","quantity":"1.0000 EOS","memo":"1456243456"}
+#  oyanftmarket <= eosio.token::transfer        {"from":"oyausr111111","to":"oyanftmarket","quantity":"1.0000 EOS","memo":"1456243456"}
 warning: transaction executed locally, but may not be confirmed by the network yet         ]
 ```
-  - show the tippertipper accounts balance of `tipuser11111`
+  - show the oyanftmarket accounts balance of `oyausr111111`
 ```console
-$ cleost get table tippertipper tippertipper accounts --show-payer --lower 145624324 --upper 145624324
+$ cleost get table oyanftmarket oyanftmarket accounts --show-payer --lower 1456243456 --upper 1456243456
 {
   "rows": [{
       "data": {
-        "owner": 145624324,
+        "owner": 1456243456,
         "balances": [{
             "key": {
               "sym": "4,EOS",
               "contract": "eosio.token"
             },
-            "value": 100000
+            "value": 10000
           }
         ]
       },
-      "payer": "tippertipper"
+      "payer": "oyanftmarket"
     }
   ],
   "more": false,
@@ -163,18 +163,18 @@ $ cleost get table tippertipper tippertipper accounts --show-payer --lower 14562
   "next_key_bytes": ""
 }
 ```
-  - show the eosio.token (EOS) balance of `tipuser11111`
+  - show the eosio.token (EOS) balance of `oyausr111111`
 ```console
-$ cleost get table eosio.token tipuser11111 accounts --show-payer
+$ cleost get table eosio.token oyausr111111 accounts --show-payer
 {
   "rows": [{
       "data": {
-        "balance": "84.9899 EOS"
+        "balance": "199.0000 EOS"
       },
-      "payer": "tipuser11111"
+      "payer": "oyausr111111"
     },{
       "data": {
-        "balance": "100.0000 JUNGLE"
+        "balance": "200.0000 JUNGLE"
       },
       "payer": "junglefaucet"
     }
@@ -185,110 +185,13 @@ $ cleost get table eosio.token tipuser11111 accounts --show-payer
 }
 ```
 
-#### FUTBOL
-* `tipuser11111` transfer some quantity (in FUTBOL) to contract account
-  - show the tippertipper accounts balance of `tipuser11111` by telegram_id
-```console
-$ cleost get table tippertipper tippertipper accounts --show-payer --lower 145624324 --upper 145624324
-{
-  "rows": [{
-      "data": {
-        "owner": 145624324,
-        "balances": [{
-            "key": {
-              "sym": "4,EOS",
-              "contract": "eosio.token"
-            },
-            "value": 100000
-          }
-        ]
-      },
-      "payer": "tippertipper"
-    }
-  ],
-  "more": false,
-  "next_key": "",
-  "next_key_bytes": ""
-}
-```
-  - show the FUTBOL token balance of `tipuser11111`
-```console
-$ cleost get table tokenfutbol1 tipuser11111 accounts --show-payer
-{
-  "rows": [{
-      "data": {
-        "balance": "99.8000 FUTBOL"
-      },
-      "payer": "tipuser11111"
-    }
-  ],
-  "more": false,
-  "next_key": "",
-  "next_key_bytes": ""
-}
-```
-  - transfer
-```console
-$ cleost push action tokenfutbol1 transfer '["tipuser11111", "tippertipper", "10.0000 FUTBOL", "145624324"]' -p tipuser11111@active
-executed transaction: 11212f037dff1c2f4af5c02b1e4d2e88ed6171dea62ff5f62711ab840ea5c3b4  136 bytes  208 us
-#  tokenfutbol1 <= tokenfutbol1::transfer       {"from":"tipuser11111","to":"tippertipper","quantity":"10.0000 FUTBOL","memo":"145624324"}
-#  tipuser11111 <= tokenfutbol1::transfer       {"from":"tipuser11111","to":"tippertipper","quantity":"10.0000 FUTBOL","memo":"145624324"}
-#  tippertipper <= tokenfutbol1::transfer       {"from":"tipuser11111","to":"tippertipper","quantity":"10.0000 FUTBOL","memo":"145624324"}
-warning: transaction executed locally, but may not be confirmed by the network yet         ]
-```
-  - show the tippertipper accounts balance of `tipuser11111` by telegram_id
-```console
-$ cleost get table tippertipper tippertipper accounts --show-payer --lower 145624324 --upper 145624324
-{
-  "rows": [{
-      "data": {
-        "owner": 145624324,
-        "balances": [{
-            "key": {
-              "sym": "4,EOS",
-              "contract": "eosio.token"
-            },
-            "value": 100000
-          },{
-            "key": {
-              "sym": "4,FUTBOL",
-              "contract": "tokenfutbol1"
-            },
-            "value": 100000
-          }
-        ]
-      },
-      "payer": "tippertipper"
-    }
-  ],
-  "more": false,
-  "next_key": "",
-  "next_key_bytes": ""
-}
-```
-  - show the FUTBOL token balance of `tipuser11111`
-```console
-$ cleost get table tokenfutbol1 tipuser11111 accounts --show-payer
-{
-  "rows": [{
-      "data": {
-        "balance": "89.8000 FUTBOL"
-      },
-      "payer": "tipuser11111"
-    }
-  ],
-  "more": false,
-  "next_key": "",
-  "next_key_bytes": ""
-}
-```
 
 ### Action - `tip`
 #### EOS
 * `tipuser11111` tips "1 EOS" to `tipuser11112` by just using telegram_id
-  - show the tippertipper accounts balance of `tipuser11111` by telegram_id
+  - show the oyanftmarket accounts balance of `tipuser11111` by telegram_id
 ```console
-$ cleost get table tippertipper tippertipper accounts --show-payer --lower 145624324 --upper 145624324
+$ cleost get table oyanftmarket oyanftmarket accounts --show-payer --lower 145624324 --upper 145624324
 {
   "rows": [{
       "data": {
@@ -308,7 +211,7 @@ $ cleost get table tippertipper tippertipper accounts --show-payer --lower 14562
           }
         ]
       },
-      "payer": "tippertipper"
+      "payer": "oyanftmarket"
     }
   ],
   "more": false,
@@ -318,14 +221,14 @@ $ cleost get table tippertipper tippertipper accounts --show-payer --lower 14562
 ```
   - tip
 ```console
-$ cleost push action tippertipper tip '["145624324", "768743431", "ali67", "ali68", "1.0000 EOS", "tip for enjoy"]' -p tippertipper@active
+$ cleost push action oyanftmarket tip '["145624324", "768743431", "ali67", "ali68", "1.0000 EOS", "tip for enjoy"]' -p oyanftmarket@active
 executed transaction: e76752df9d9f1d11028d67a3a0bb43cc8025f3b7ae0836a510151fdf1385b50e  152 bytes  178 us
-#  tippertipper <= tippertipper::tip            {"from_id":145624324,"to_id":768743431,"from_username":"ali67","to_username":"ali68","quantity":"1.0...
+#  oyanftmarket <= oyanftmarket::tip            {"from_id":145624324,"to_id":768743431,"from_username":"ali67","to_username":"ali68","quantity":"1.0...
 warning: transaction executed locally, but may not be confirmed by the network yet         ]
 ``` 
-  - show the tippertipper accounts balance of `tipuser11111` by telegram_id
+  - show the oyanftmarket accounts balance of `tipuser11111` by telegram_id
 ```console
-$ cleost get table tippertipper tippertipper accounts --show-payer --lower 145624324 --upper 145624324
+$ cleost get table oyanftmarket oyanftmarket accounts --show-payer --lower 145624324 --upper 145624324
 {
   "rows": [{
       "data": {
@@ -345,7 +248,7 @@ $ cleost get table tippertipper tippertipper accounts --show-payer --lower 14562
           }
         ]
       },
-      "payer": "tippertipper"
+      "payer": "oyanftmarket"
     }
   ],
   "more": false,
@@ -353,9 +256,9 @@ $ cleost get table tippertipper tippertipper accounts --show-payer --lower 14562
   "next_key_bytes": ""
 }
 ```
-  - show the tippertipper accounts balance of `tipuser11112` by telegram_id
+  - show the oyanftmarket accounts balance of `tipuser11112` by telegram_id
 ```console
-$ cleost get table tippertipper tippertipper accounts --show-payer --lower 768743431 --upper 768743431
+$ cleost get table oyanftmarket oyanftmarket accounts --show-payer --lower 768743431 --upper 768743431
 {
   "rows": [{
       "data": {
@@ -369,7 +272,7 @@ $ cleost get table tippertipper tippertipper accounts --show-payer --lower 76874
           }
         ]
       },
-      "payer": "tippertipper"
+      "payer": "oyanftmarket"
     }
   ],
   "more": false,
@@ -380,9 +283,9 @@ $ cleost get table tippertipper tippertipper accounts --show-payer --lower 76874
 
 #### FUTBOL
 * `tipuser11111` tips "0.1 FUTBOL" to `tipuser11112`
-  - show the tippertipper accounts balance of `tipuser11111`
+  - show the oyanftmarket accounts balance of `tipuser11111`
 ```console
-$ cleost get table tippertipper tippertipper accounts --show-payer --lower 145624324 --upper 145624324
+$ cleost get table oyanftmarket oyanftmarket accounts --show-payer --lower 145624324 --upper 145624324
 {
   "rows": [{
       "data": {
@@ -402,7 +305,7 @@ $ cleost get table tippertipper tippertipper accounts --show-payer --lower 14562
           }
         ]
       },
-      "payer": "tippertipper"
+      "payer": "oyanftmarket"
     }
   ],
   "more": false,
@@ -412,14 +315,14 @@ $ cleost get table tippertipper tippertipper accounts --show-payer --lower 14562
 ```
   - tip
 ```console
-$ cleost push action tippertipper tip '["145624324", "768743431", "ali67", "ali68", "1.0000 FUTBOL", "tip for enjoy"]' -p tippertipper@active
+$ cleost push action oyanftmarket tip '["145624324", "768743431", "ali67", "ali68", "1.0000 FUTBOL", "tip for enjoy"]' -p oyanftmarket@active
 executed transaction: 513f60ed461420058edc235dd8c6abeb72a3326cdd1df94b4b671f7877e82f79  152 bytes  139 us
-#  tippertipper <= tippertipper::tip            {"from_id":145624324,"to_id":768743431,"from_username":"ali67","to_username":"ali68","quantity":"1.0...
+#  oyanftmarket <= oyanftmarket::tip            {"from_id":145624324,"to_id":768743431,"from_username":"ali67","to_username":"ali68","quantity":"1.0...
 warning: transaction executed locally, but may not be confirmed by the network yet         ]
 ``` 
-  - show the tippertipper accounts balance of `tipuser11111` by telegram_id
+  - show the oyanftmarket accounts balance of `tipuser11111` by telegram_id
 ```console
-$ cleost get table tippertipper tippertipper accounts --show-payer --lower 145624324 --upper 145624324
+$ cleost get table oyanftmarket oyanftmarket accounts --show-payer --lower 145624324 --upper 145624324
 {
   "rows": [{
       "data": {
@@ -439,7 +342,7 @@ $ cleost get table tippertipper tippertipper accounts --show-payer --lower 14562
           }
         ]
       },
-      "payer": "tippertipper"
+      "payer": "oyanftmarket"
     }
   ],
   "more": false,
@@ -447,9 +350,9 @@ $ cleost get table tippertipper tippertipper accounts --show-payer --lower 14562
   "next_key_bytes": ""
 }
 ```
-  - show the tippertipper accounts balance of `tipuser11112` by telegram_id
+  - show the oyanftmarket accounts balance of `tipuser11112` by telegram_id
 ```console
-$ cleost get table tippertipper tippertipper accounts --show-payer --lower 768743431 --upper 768743431
+$ cleost get table oyanftmarket oyanftmarket accounts --show-payer --lower 768743431 --upper 768743431
 {
   "rows": [{
       "data": {
@@ -463,13 +366,13 @@ $ cleost get table tippertipper tippertipper accounts --show-payer --lower 76874
           },{
             "key": {
               "sym": "4,FUTBOL",
-              "contract": "tippertipper"
+              "contract": "oyanftmarket"
             },
             "value": 10000
           }
         ]
       },
-      "payer": "tippertipper"
+      "payer": "oyanftmarket"
     }
   ],
   "more": false,
@@ -481,37 +384,37 @@ $ cleost get table tippertipper tippertipper accounts --show-payer --lower 76874
 ### Extra
 * del accounts table
 ```console
-$ cleost push action tippertipper testdlacbyid '["145624324"]' -p tippertipper@active
+$ cleost push action oyanftmarket testdlacbyid '["145624324"]' -p oyanftmarket@active
 executed transaction: 90ac9c2b382f2eb744ae040808497ba64412b7ca880ca19c34f12fe14903dc11  104 bytes  224 us
-#  tippertipper <= tippertipper::testdlacbyid   {"tg_id":145624324}
+#  oyanftmarket <= oyanftmarket::testdlacbyid   {"tg_id":145624324}
 warning: transaction executed locally, but may not be confirmed by the network yet         ]
 ```
 * transfer EOS token back
 ```console
-$ cleost push action eosio.token transfer '["tippertipper", "tipuser11111", "9.0000 EOS", "return accounts"]' -p tippertipper@active
+$ cleost push action eosio.token transfer '["oyanftmarket", "tipuser11111", "9.0000 EOS", "return accounts"]' -p oyanftmarket@active
 executed transaction: 63830728e6cf5f5557e255bd9f4dd106cc1aa52fbc4f686cb8038befddcd5a40  144 bytes  143 us
-#   eosio.token <= eosio.token::transfer        {"from":"tippertipper","to":"tipuser11111","quantity":"9.0000 EOS","memo":"return accounts"}
-#  tippertipper <= eosio.token::transfer        {"from":"tippertipper","to":"tipuser11111","quantity":"9.0000 EOS","memo":"return accounts"}
+#   eosio.token <= eosio.token::transfer        {"from":"oyanftmarket","to":"tipuser11111","quantity":"9.0000 EOS","memo":"return accounts"}
+#  oyanftmarket <= eosio.token::transfer        {"from":"oyanftmarket","to":"tipuser11111","quantity":"9.0000 EOS","memo":"return accounts"}
 >> Either money is not sent to the contract or contract itself is the buyer.
-#  tipuser11111 <= eosio.token::transfer        {"from":"tippertipper","to":"tipuser11111","quantity":"9.0000 EOS","memo":"return accounts"}
+#  tipuser11111 <= eosio.token::transfer        {"from":"oyanftmarket","to":"tipuser11111","quantity":"9.0000 EOS","memo":"return accounts"}
 warning: transaction executed locally, but may not be confirmed by the network yet         ]
 ```
 * transfer FUTBOL token back
 ```console
-$ cleost push action tokenfutbol1 transfer '["tippertipper", "tipuser11111", "9.9000 FUTBOL", "return accounts"]' -p tippertipper@active
+$ cleost push action tokenfutbol1 transfer '["oyanftmarket", "tipuser11111", "9.9000 FUTBOL", "return accounts"]' -p oyanftmarket@active
 executed transaction: 89a821e0193e65fee6bd6e03c845292a877edd3358e9156898dd29af9a32c615  136 bytes  145 us
-#  tokenfutbol1 <= tokenfutbol1::transfer       {"from":"tippertipper","to":"tipuser11111","quantity":"9.9000 FUTBOL","memo":"return accounts"}
-#  tippertipper <= tokenfutbol1::transfer       {"from":"tippertipper","to":"tipuser11111","quantity":"9.9000 FUTBOL","memo":"return accounts"}
+#  tokenfutbol1 <= tokenfutbol1::transfer       {"from":"oyanftmarket","to":"tipuser11111","quantity":"9.9000 FUTBOL","memo":"return accounts"}
+#  oyanftmarket <= tokenfutbol1::transfer       {"from":"oyanftmarket","to":"tipuser11111","quantity":"9.9000 FUTBOL","memo":"return accounts"}
 >> Either money is not sent to the contract or contract itself is the buyer.
-#  tipuser11111 <= tokenfutbol1::transfer       {"from":"tippertipper","to":"tipuser11111","quantity":"9.9000 FUTBOL","memo":"return accounts"}
+#  tipuser11111 <= tokenfutbol1::transfer       {"from":"oyanftmarket","to":"tipuser11111","quantity":"9.9000 FUTBOL","memo":"return accounts"}
 warning: transaction executed locally, but may not be confirmed by the network yet         ]
 ```
 * test by add/sub - 1/0 token to existing tg_id
 ```console
-$ cleost push action tippertipper testmdqtyusr '["145624324", "2.0000 EOS", "1"]' -p tippert
+$ cleost push action oyanftmarket testmdqtyusr '["145624324", "2.0000 EOS", "1"]' -p tippert
 ipper@active
 executed transaction: 45f6fe0feb3b2b364fc4a3202267aad17429a67519e348ee55170832ed0e730e  120 bytes  253 us
-#  tippertipper <= tippertipper::testmdqtyusr   {"from_id":145624324,"quantity":"2.0000 EOS","arithmetic_op":1}
+#  oyanftmarket <= oyanftmarket::testmdqtyusr   {"from_id":145624324,"quantity":"2.0000 EOS","arithmetic_op":1}
 warning: transaction executed locally, but may not be confirmed by the network yet         ]
 ```
 
