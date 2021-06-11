@@ -512,10 +512,12 @@ public:
 	 * @details - seller claim auction
 	 * 
 	 * @param auction_id - auction id
+	 * @param seller_id - seller id
 	 * @param bidder_id - bidder id
 	 */
 	ACTION sclaimauct(
 				uint64_t auction_id,
+				uint64_t seller_id,
 				uint64_t bidder_id
 			);
 
@@ -1008,7 +1010,7 @@ public:
 	// -----------------------------------------------------------------------------------------------------------------------
 	// template<typename T1, typename T2>
 	// inline bool key_found_in_map(map<T1, T2>& m, const T1& item_key) {
-	inline bool key_found_in_map(map<uint64_t, bid_t>& m, uint64_t item_key) {
+	inline bool key_found_in_map(const map<uint64_t, bid_t>& m, uint64_t item_key) {
 		bool found = false;
 		// auto s_it = std::find_if(m.begin(), m.end(), [&](auto& ms) {return ms.first == item_key;});
 		auto s_it = m.find(item_key);
@@ -1021,8 +1023,8 @@ public:
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------------
-	template<typename T1, typename T2>
-	inline bool crypto_found_in_map(map<uint64_t, bid_t>& m, uint64_t item_key) {
+	// template<typename T1, typename T2>
+	inline bool crypto_found_in_map(const map<uint64_t, bid_t>& m, uint64_t item_key) {
 		bool found = false;
 		// auto s_it = std::find_if(m.begin(), m.end(), [&](auto& ms) {return ms.first == item_key;});
 		auto s_it = m.find(item_key);
@@ -1078,7 +1080,8 @@ public:
 			if(token_contract_name == ""_n)
 				i1.fund_crypto.insert(make_pair(extended_symbol(item_val_fcrypto_qty.symbol, get_first_receiver()), item_val_fcrypto_qty.amount));
 			else 
-				i1.fund_crypto.insert(make_pair(extended_symbol(item_val_fcrypto_qty.symbol, capture_contract_in_map(m, item_val_fcrypto_qty)), item_val_fcrypto_qty.amount));
+				// i1.fund_crypto.insert(make_pair(extended_symbol(item_val_fcrypto_qty.symbol, capture_contract_in_map(m, item_val_fcrypto_qty)), item_val_fcrypto_qty.amount));	// replace 'm' with a map<extended_symbol, uint64_t> object
+				i1.fund_crypto.insert(make_pair(extended_symbol(item_val_fcrypto_qty.symbol, "captract"_n), item_val_fcrypto_qty.amount));			// as map<extended_symbol, uint64_t> object not found, So, added "captract"_n
 			i1.fund_usd = item_val.fund_usd;
 			m.insert( make_pair(item_key, i1) );
 		}

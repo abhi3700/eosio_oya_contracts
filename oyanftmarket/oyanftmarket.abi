@@ -1,0 +1,1285 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT ",
+    "version": "eosio::abi/1.2",
+    "types": [],
+    "structs": [
+        {
+            "name": "",
+            "base": "",
+            "fields": [
+                {
+                    "name": "share",
+                    "type": "float32"
+                },
+                {
+                    "name": "fund_crypto",
+                    "type": "pair_extended_symbol_uint64[]"
+                },
+                {
+                    "name": "fund_usd",
+                    "type": "float32"
+                }
+            ]
+        },
+        {
+            "name": "account",
+            "base": "",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "uint64"
+                },
+                {
+                    "name": "balances",
+                    "type": "pair_extended_symbol_uint64[]"
+                }
+            ]
+        },
+        {
+            "name": "additemauct",
+            "base": "",
+            "fields": [
+                {
+                    "name": "auction_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "seller_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "item_ids",
+                    "type": "uint64[]"
+                }
+            ]
+        },
+        {
+            "name": "additemnctor",
+            "base": "",
+            "fields": [
+                {
+                    "name": "noncreator_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "collection_name",
+                    "type": "name"
+                },
+                {
+                    "name": "item_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "additemsale",
+            "base": "",
+            "fields": [
+                {
+                    "name": "sale_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "seller_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "item_ids",
+                    "type": "uint64[]"
+                }
+            ]
+        },
+        {
+            "name": "addmodasset",
+            "base": "",
+            "fields": [
+                {
+                    "name": "collection_name",
+                    "type": "name"
+                },
+                {
+                    "name": "creator_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "asset_name",
+                    "type": "string"
+                },
+                {
+                    "name": "asset_desc",
+                    "type": "string"
+                },
+                {
+                    "name": "asset_img_hash",
+                    "type": "checksum256"
+                },
+                {
+                    "name": "asset_vid_hash",
+                    "type": "checksum256"
+                },
+                {
+                    "name": "asset_gif_hash",
+                    "type": "checksum256"
+                },
+                {
+                    "name": "asset_file_hash",
+                    "type": "checksum256"
+                },
+                {
+                    "name": "asset_copies_qty_total",
+                    "type": "uint64"
+                },
+                {
+                    "name": "asset_royaltyfee",
+                    "type": "float32"
+                },
+                {
+                    "name": "asset_artist",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "addmodcol",
+            "base": "",
+            "fields": [
+                {
+                    "name": "creator_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "collection_name",
+                    "type": "name"
+                },
+                {
+                    "name": "collection_displayname",
+                    "type": "string"
+                },
+                {
+                    "name": "collection_desc",
+                    "type": "string"
+                },
+                {
+                    "name": "collection_url",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "auction",
+            "base": "",
+            "fields": [
+                {
+                    "name": "auction_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "item_ids",
+                    "type": "uint64[]"
+                },
+                {
+                    "name": "asset_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "seller_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "start_time",
+                    "type": "uint32"
+                },
+                {
+                    "name": "end_time",
+                    "type": "uint32"
+                },
+                {
+                    "name": "current_price_crypto",
+                    "type": "asset"
+                },
+                {
+                    "name": "current_price_fiat_usd",
+                    "type": "float32"
+                },
+                {
+                    "name": "map_bidderid_info",
+                    "type": "pair_uint64_bid_t[]"
+                },
+                {
+                    "name": "claimed_by_seller",
+                    "type": "bool"
+                },
+                {
+                    "name": "confirmed_bidder_id_by_seller",
+                    "type": "uint64"
+                },
+                {
+                    "name": "status",
+                    "type": "bool"
+                },
+                {
+                    "name": "collection_name",
+                    "type": "name"
+                },
+                {
+                    "name": "royalty_fee",
+                    "type": "float32"
+                }
+            ]
+        },
+        {
+            "name": "bclaimauct",
+            "base": "",
+            "fields": [
+                {
+                    "name": "auction_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "bidder_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "pay_mode",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "bidforauct",
+            "base": "",
+            "fields": [
+                {
+                    "name": "auction_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "bidder_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "pay_mode",
+                    "type": "name"
+                },
+                {
+                    "name": "bid_price_crypto",
+                    "type": "asset"
+                },
+                {
+                    "name": "bid_price_fiat_usd",
+                    "type": "float32"
+                }
+            ]
+        },
+        {
+            "name": "buysale",
+            "base": "",
+            "fields": [
+                {
+                    "name": "sale_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "buyer_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "pay_mode",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "collection",
+            "base": "",
+            "fields": [
+                {
+                    "name": "collection_name",
+                    "type": "name"
+                },
+                {
+                    "name": "collection_displayname",
+                    "type": "string"
+                },
+                {
+                    "name": "collection_desc",
+                    "type": "string"
+                },
+                {
+                    "name": "collection_url",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "creconfirmsf",
+            "base": "",
+            "fields": [
+                {
+                    "name": "creator_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "investor_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "collection_name",
+                    "type": "name"
+                },
+                {
+                    "name": "asset_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "scfa",
+                    "type": "uint8"
+                }
+            ]
+        },
+        {
+            "name": "delasset",
+            "base": "",
+            "fields": [
+                {
+                    "name": "collection_name",
+                    "type": "name"
+                },
+                {
+                    "name": "asset_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "creator_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "delauction",
+            "base": "",
+            "fields": [
+                {
+                    "name": "auction_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "delcol",
+            "base": "",
+            "fields": [
+                {
+                    "name": "creator_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "collection_name",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "delitem",
+            "base": "",
+            "fields": [
+                {
+                    "name": "collection_name",
+                    "type": "name"
+                },
+                {
+                    "name": "asset_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "creator_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "item_qty",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "delsale",
+            "base": "",
+            "fields": [
+                {
+                    "name": "sale_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "extended_symbol",
+            "base": "",
+            "fields": [
+                {
+                    "name": "sym",
+                    "type": "symbol"
+                },
+                {
+                    "name": "contract",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "finalizefund",
+            "base": "",
+            "fields": [
+                {
+                    "name": "creator_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "investor_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "collection_name",
+                    "type": "name"
+                },
+                {
+                    "name": "asset_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "funding",
+            "base": "",
+            "fields": [
+                {
+                    "name": "asset_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "investor_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "creator_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "proposed_share",
+                    "type": "float32"
+                },
+                {
+                    "name": "proposed_fund_crypto",
+                    "type": "asset"
+                },
+                {
+                    "name": "proposed_fund_fiat_usd",
+                    "type": "float32"
+                },
+                {
+                    "name": "confirmed_share_by_investor",
+                    "type": "bool"
+                },
+                {
+                    "name": "confirmed_share_by_creator",
+                    "type": "bool"
+                },
+                {
+                    "name": "confirmed_fund_crypto_by_investor",
+                    "type": "bool"
+                },
+                {
+                    "name": "confirmed_fund_crypto_by_creator",
+                    "type": "bool"
+                },
+                {
+                    "name": "confirmed_fund_fiat_usd_by_investor",
+                    "type": "bool"
+                },
+                {
+                    "name": "confirmed_fund_fiat_usd_by_creator",
+                    "type": "bool"
+                },
+                {
+                    "name": "is_funding_closed",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "invconfirmsf",
+            "base": "",
+            "fields": [
+                {
+                    "name": "investor_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "collection_name",
+                    "type": "name"
+                },
+                {
+                    "name": "asset_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "scfa",
+                    "type": "uint8"
+                }
+            ]
+        },
+        {
+            "name": "listitemauct",
+            "base": "",
+            "fields": [
+                {
+                    "name": "seller_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "collection_name",
+                    "type": "name"
+                },
+                {
+                    "name": "item_ids",
+                    "type": "uint64[]"
+                },
+                {
+                    "name": "end_time",
+                    "type": "uint32"
+                },
+                {
+                    "name": "price_mode",
+                    "type": "name"
+                },
+                {
+                    "name": "current_price_crypto",
+                    "type": "asset"
+                },
+                {
+                    "name": "current_price_fiat_usd",
+                    "type": "float32"
+                }
+            ]
+        },
+        {
+            "name": "listitemsale",
+            "base": "",
+            "fields": [
+                {
+                    "name": "seller_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "collection_name",
+                    "type": "name"
+                },
+                {
+                    "name": "item_ids",
+                    "type": "uint64[]"
+                },
+                {
+                    "name": "price_mode",
+                    "type": "name"
+                },
+                {
+                    "name": "listing_price_crypto",
+                    "type": "asset"
+                },
+                {
+                    "name": "listing_price_fiat_usd",
+                    "type": "float32"
+                }
+            ]
+        },
+        {
+            "name": "negoshareast",
+            "base": "",
+            "fields": [
+                {
+                    "name": "creator_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "investor_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "collection_name",
+                    "type": "name"
+                },
+                {
+                    "name": "asset_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "proposed_share",
+                    "type": "float32"
+                },
+                {
+                    "name": "proposed_fund_crypto",
+                    "type": "asset"
+                },
+                {
+                    "name": "proposed_fund_fiat_usd",
+                    "type": "float32"
+                }
+            ]
+        },
+        {
+            "name": "oasset",
+            "base": "",
+            "fields": [
+                {
+                    "name": "asset_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "creator_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "asset_name",
+                    "type": "string"
+                },
+                {
+                    "name": "asset_desc",
+                    "type": "string"
+                },
+                {
+                    "name": "asset_img_hash",
+                    "type": "checksum256"
+                },
+                {
+                    "name": "asset_vid_hash",
+                    "type": "checksum256"
+                },
+                {
+                    "name": "asset_gif_hash",
+                    "type": "checksum256"
+                },
+                {
+                    "name": "asset_file_hash",
+                    "type": "checksum256"
+                },
+                {
+                    "name": "asset_item_ids_listed_sale",
+                    "type": "uint64[]"
+                },
+                {
+                    "name": "asset_item_ids_listed_auct",
+                    "type": "uint64[]"
+                },
+                {
+                    "name": "asset_item_ids_transferred",
+                    "type": "uint64[]"
+                },
+                {
+                    "name": "asset_copies_qty_total",
+                    "type": "uint64"
+                },
+                {
+                    "name": "asset_royaltyfee",
+                    "type": "float32"
+                },
+                {
+                    "name": "asset_artist",
+                    "type": "string"
+                },
+                {
+                    "name": "required_fund_crypto",
+                    "type": "pair_extended_symbol_uint64[]"
+                },
+                {
+                    "name": "required_fund_fiat_usd",
+                    "type": "float32"
+                },
+                {
+                    "name": "map_investorid_info",
+                    "type": "pair_uint64_investor_t[]"
+                }
+            ]
+        },
+        {
+            "name": "oyanocreator",
+            "base": "",
+            "fields": [
+                {
+                    "name": "asset_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "collection_name",
+                    "type": "name"
+                },
+                {
+                    "name": "item_ids",
+                    "type": "uint64[]"
+                }
+            ]
+        },
+        {
+            "name": "pair_extended_symbol_uint64",
+            "base": "",
+            "fields": [
+                {
+                    "name": "key",
+                    "type": "extended_symbol"
+                },
+                {
+                    "name": "value",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "pair_uint64_bid_t",
+            "base": "",
+            "fields": [
+                {
+                    "name": "key",
+                    "type": "uint64"
+                },
+                {
+                    "name": "value",
+                    "type": "bid_t"
+                }
+            ]
+        },
+        {
+            "name": "pair_uint64_investor_t",
+            "base": "",
+            "fields": [
+                {
+                    "name": "key",
+                    "type": "uint64"
+                },
+                {
+                    "name": "value",
+                    "type": "investor_t"
+                }
+            ]
+        },
+        {
+            "name": "propshareast",
+            "base": "",
+            "fields": [
+                {
+                    "name": "investor_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "collection_name",
+                    "type": "name"
+                },
+                {
+                    "name": "asset_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "proposed_share",
+                    "type": "float32"
+                },
+                {
+                    "name": "pay_mode",
+                    "type": "name"
+                },
+                {
+                    "name": "proposed_fund_crypto",
+                    "type": "asset"
+                },
+                {
+                    "name": "proposed_fund_fiat_usd",
+                    "type": "float32"
+                }
+            ]
+        },
+        {
+            "name": "raisefund",
+            "base": "",
+            "fields": [
+                {
+                    "name": "creator_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "collection_name",
+                    "type": "name"
+                },
+                {
+                    "name": "asset_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "pay_mode",
+                    "type": "name"
+                },
+                {
+                    "name": "required_fund_crypto",
+                    "type": "asset"
+                },
+                {
+                    "name": "required_fund_fiat_usd",
+                    "type": "float32"
+                }
+            ]
+        },
+        {
+            "name": "rmitemauct",
+            "base": "",
+            "fields": [
+                {
+                    "name": "auction_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "seller_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "item_ids",
+                    "type": "uint64[]"
+                }
+            ]
+        },
+        {
+            "name": "rmitemnctor",
+            "base": "",
+            "fields": [
+                {
+                    "name": "noncreator_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "item_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "rmitemsale",
+            "base": "",
+            "fields": [
+                {
+                    "name": "sale_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "seller_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "item_ids",
+                    "type": "uint64[]"
+                }
+            ]
+        },
+        {
+            "name": "sale",
+            "base": "",
+            "fields": [
+                {
+                    "name": "sale_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "item_ids",
+                    "type": "uint64[]"
+                },
+                {
+                    "name": "asset_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "seller_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "listing_price_crypto",
+                    "type": "asset"
+                },
+                {
+                    "name": "listing_price_fiat_usd",
+                    "type": "float32"
+                },
+                {
+                    "name": "buyer_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "collection_name",
+                    "type": "name"
+                },
+                {
+                    "name": "royalty_fee",
+                    "type": "float32"
+                }
+            ]
+        },
+        {
+            "name": "sclaimauct",
+            "base": "",
+            "fields": [
+                {
+                    "name": "auction_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "seller_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "bidder_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "setpriceauct",
+            "base": "",
+            "fields": [
+                {
+                    "name": "auction_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "seller_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "price_mode",
+                    "type": "name"
+                },
+                {
+                    "name": "current_price_crypto",
+                    "type": "asset"
+                },
+                {
+                    "name": "current_price_fiat_usd",
+                    "type": "float32"
+                }
+            ]
+        },
+        {
+            "name": "setpricesale",
+            "base": "",
+            "fields": [
+                {
+                    "name": "sale_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "seller_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "price_mode",
+                    "type": "name"
+                },
+                {
+                    "name": "listing_price_crypto",
+                    "type": "asset"
+                },
+                {
+                    "name": "listing_price_fiat_usd",
+                    "type": "float32"
+                }
+            ]
+        },
+        {
+            "name": "tip",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "to_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "from_username",
+                    "type": "string"
+                },
+                {
+                    "name": "to_username",
+                    "type": "string"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "ulistauction",
+            "base": "",
+            "fields": [
+                {
+                    "name": "auction_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "seller_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "unlistsale",
+            "base": "",
+            "fields": [
+                {
+                    "name": "sale_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "seller_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "withdraw",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "from_username",
+                    "type": "string"
+                },
+                {
+                    "name": "to_ac",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "name": "additemauct",
+            "type": "additemauct",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "additemnctor",
+            "type": "additemnctor",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "additemsale",
+            "type": "additemsale",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "addmodasset",
+            "type": "addmodasset",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "addmodcol",
+            "type": "addmodcol",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "bclaimauct",
+            "type": "bclaimauct",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "bidforauct",
+            "type": "bidforauct",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "buysale",
+            "type": "buysale",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "creconfirmsf",
+            "type": "creconfirmsf",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "delasset",
+            "type": "delasset",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "delauction",
+            "type": "delauction",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "delcol",
+            "type": "delcol",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "delitem",
+            "type": "delitem",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "delsale",
+            "type": "delsale",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "finalizefund",
+            "type": "finalizefund",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "invconfirmsf",
+            "type": "invconfirmsf",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "listitemauct",
+            "type": "listitemauct",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "listitemsale",
+            "type": "listitemsale",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "negoshareast",
+            "type": "negoshareast",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "propshareast",
+            "type": "propshareast",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "raisefund",
+            "type": "raisefund",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "rmitemauct",
+            "type": "rmitemauct",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "rmitemnctor",
+            "type": "rmitemnctor",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "rmitemsale",
+            "type": "rmitemsale",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "sclaimauct",
+            "type": "sclaimauct",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setpriceauct",
+            "type": "setpriceauct",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setpricesale",
+            "type": "setpricesale",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "tip",
+            "type": "tip",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "ulistauction",
+            "type": "ulistauction",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "unlistsale",
+            "type": "unlistsale",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "withdraw",
+            "type": "withdraw",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "accounts",
+            "type": "account",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "assets",
+            "type": "oasset",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "auctions",
+            "type": "auction",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "collections",
+            "type": "collection",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "funding",
+            "type": "funding",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "oyanocreator",
+            "type": "oyanocreator",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "sales",
+            "type": "sale",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "kv_tables": {},
+    "ricardian_clauses": [],
+    "variants": [],
+    "action_results": []
+}

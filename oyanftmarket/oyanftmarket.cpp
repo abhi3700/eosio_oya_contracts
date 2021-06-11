@@ -1313,6 +1313,7 @@ void oyanftmarket::bidforauct(
 // --------------------------------------------------------------------------------------------------------------------
 void oyanftmarket::sclaimauct(
 				uint64_t auction_id,
+				uint64_t seller_id,
 				uint64_t bidder_id
 			)
 {
@@ -1325,6 +1326,8 @@ void oyanftmarket::sclaimauct(
 
 	// check the auction is still ongoing
 	check( (!auction_it->claimed_by_seller && (auction_it->end_time >= now()) ), "the auction is closed now, so seller can\'t claim.");
+
+	check(auction_it->seller_id == seller_id, "This auction is not owned by this seller.");
 
 	// check whether this bidder is found in the map - `map_bidderid_claimedbybidder`
 	check( key_found_in_map(auction_it->map_bidderid_info, bidder_id), "This bidder is not found in the bidding list.");
@@ -1371,18 +1374,20 @@ void oyanftmarket::bclaimauct(
 	if (pay_mode == "crypto"_n) {
 		check( crypto_found_in_map(auction_it->map_bidderid_info, bidder_id), "bidder had not chosen crypto pay mode for auction purchase." );
 /*		check( key_found_in_map(auction_it->map_bidderid_cprice, bidder_id), "bidder had not chosen crypto pay mode for auction purchase." );
-		auto bidder_price = auction_it->map_bidderid_cprice[bidder_id];
-*/		auto bidder_price = auction_it->map_bidderid_info[bidder_id].bid_crypto_price;
+		auto bidder_crypto_price = auction_it->map_bidderid_cprice[bidder_id];
+*/		
+		auto bidderid_it = auction_it->map_bidderid_info.find(bidder_id);
+		auto bidder_crypto_price = bidderid_it->second.bid_crypto_price;				// check has been done for key been found.
 
 		// create asset for seller
-		auto qty_seller = asset(0, bidder_price.symbol);
-		qty_seller.amount = bidder_price.amount * (1 - auction_it->royalty_fee - platform_commission_rate); 
+		auto qty_seller = asset(0, bidder_crypto_price.symbol);
+		qty_seller.amount = bidder_crypto_price.amount * (1 - auction_it->royalty_fee - platform_commission_rate); 
 
 		// create asset for creator
-		auto qty_creator = asset(0, bidder_price.symbol);
-		qty_creator.amount = bidder_price.amount * auction_it->royalty_fee; 
+		auto qty_creator = asset(0, bidder_crypto_price.symbol);
+		qty_creator.amount = bidder_crypto_price.amount * auction_it->royalty_fee; 
 
-		sub_balance(bidder_id, bidder_price);			// from buyer
+		sub_balance(bidder_id, bidder_crypto_price);			// from buyer
 		add_balance(bidder_id, auction_it->seller_id, qty_seller, get_self());		// to seller
 		add_balance(bidder_id, asset_it->creator_id, qty_creator, get_self());		// to creator as royalty_fee
 		// TODO: also send the creator's share into it's investors
@@ -1489,8 +1494,8 @@ void oyanftmarket::bclaimauct(
 	auction_table.modify(auction_it, get_self(), [&](auto &row){
 		bid_t b1{};
 		b1.claimed_by_bidder = 1;
-		creatify_map(row.map_bidderid_info, bidder_id, b1, 'b');
-		// creatify_map(row.map_bidderid_claimedbybidder, bidder_id, 1);
+		creatify_bidder_map(row.map_bidderid_info, bidder_id, b1, 'b');
+		// creatify_bidder_map(row.map_bidderid_claimedbybidder, bidder_id, 1);
 		row.status = 1;
 	});
 
@@ -1651,7 +1656,7 @@ void oyanftmarket::propshareast(
 	auto ast_inv_it = ast_inv_idx.find(combine_ids(asset_id, investor_id));
 
 	if(ast_inv_it == ast_inv_idx.end()) {
-		ast_inv_idx.emplace(get_self(), [&](auto &row){
+		funding_table.emplace(get_self(), [&](auto &row){
 			row.asset_id = asset_id;
 			row.investor_id = investor_id;
 			row.creator_id = asset_it->creator_id;
@@ -1890,8 +1895,8 @@ void oyanftmarket::finalizefund(
 	check_amount_in_map( asset_it->required_fund_crypto, ast_inv_it->proposed_fund_crypto );
 
 	// fund_fiatusd
-	check( confirmed_fund_fiat_usd_by_investor && confirmed_fund_fiat_usd_by_creator, "Either creator or investor has not yet confirmed the fiat usd fund.");
-	check(asset_it->required_fund_fiat_usd >= proposed_fund_fiat_usd, 
+	check( ast_inv_it->confirmed_fund_fiat_usd_by_investor && ast_inv_it->confirmed_fund_fiat_usd_by_creator, "Either creator or investor has not yet confirmed the fiat usd fund.");
+	check(asset_it->required_fund_fiat_usd >= ast_inv_it->proposed_fund_fiat_usd, 
 		"the proposed fiat fund by creator must be less than or equal to required fund.");
 
 
@@ -1924,7 +1929,7 @@ void oyanftmarket::finalizefund(
 		investor_t i1{};
 		i1.share = ast_inv_it->proposed_share;
 		// creatify_balances_map(fund_crypto, ast_inv_it->proposed_fund_crypto, 1);		// 1 for add balance
-		i1.fund_usd = fund_usd;
+		i1.fund_usd = ast_inv_it->proposed_fund_fiat_usd;
 		creatify_investor_map(row.map_investorid_info, investor_id, i1, ast_inv_it->proposed_fund_crypto, "captract"_n);	
 	});
 
