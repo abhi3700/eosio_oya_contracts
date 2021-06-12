@@ -1647,6 +1647,8 @@ void oyanftmarket::propshareast(
 
 	check(asset_it != asset_table.end(), "there is no such asset id for this collection name");
 
+	check(asset_it->creator_id != investor_id, "the creator can\'t be the investor of owned asset.");
+
 	check( (proposed_share >= 0) && (proposed_share <= 1), "proposed share must be between 0 and 1");
 
 	check( (pay_mode == "crypto"_n) || (pay_mode == "fiat"_n), "invalid pay mode.");
