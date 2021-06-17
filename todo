@@ -1,0 +1,3 @@
+- add collection pic as param into the collection TABLE & corresponding ACTIONs
+- add collection name as unique globally like a OYA user's collection username
+- pass collection names like "microsoft.co" "painting.in" during testing. If PASS: sell those names as premium accounts
