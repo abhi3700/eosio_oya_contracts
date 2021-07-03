@@ -1,3 +1,6 @@
+- replace telegram user_id with a custodian (means the platform holds the private key) account name.
+	- the user doesn't have to manage the keys, but just enter with login credentials.
+	- the account is created on registering by giving KYC (just email id, etc.)
 - add collection pic as param into the collection TABLE & corresponding ACTIONs
 - add collection name as unique globally like a OYA user's collection username
 - pass collection names like "microsoft.co" "painting.in" during testing. If PASS: sell those names as premium accounts
